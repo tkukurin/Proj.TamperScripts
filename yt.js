@@ -12,7 +12,7 @@
 
 (function() {
   const captionTracker = new CaptionTracker(
-    10, '#player-container', '.captions-text');
+    10, '#player-container', '.captions-text').reset(true);
 
   function copyUrl() {
     const secMinHr = ['s','m','h'];

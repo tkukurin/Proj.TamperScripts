@@ -46,6 +46,7 @@ class CaptionTracker {
       const opts = {childList: true, subtree: true};
       Q.doc(this.containerSelector).then(el => this.observer.observe(el, opts));
     }
+    return this;
   }
 
   get() {
