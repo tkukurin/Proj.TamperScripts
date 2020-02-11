@@ -1,4 +1,4 @@
-# Proj.TamperStudy
+# TamperStudy
 
 TamperMonkey Chrome scripts making note-taking easier with video lectures. 
 Copy current timestamp and recent captions to clipboard.
