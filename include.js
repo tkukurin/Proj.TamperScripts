@@ -6,6 +6,7 @@
 // @version      0.1
 // @description  Generic functions
 // @author       Toni Kukurin
+// @require      file:///home/toni/.config/tampermonkey/include.js
 // @grant        none
 // ==/UserScript==
 
@@ -14,8 +15,8 @@ const F = {};
 F.guard = x => (x && Promise.resolve(x)) || Promise.reject();
 F.ret = val => fn => args => {fn(args); return val};
 F.retSelf = fn => a => F.ret(a)(fn)(a);
-F.retT = F.ret(true);
-F.retF = F.ret(false);
+F.retTrue = F.ret(true);
+F.retFalse = F.ret(false);
 
 // Query
 const Q = {}
@@ -25,11 +26,11 @@ Q.doc = (sel) => Q.el(document, sel);
 const Shortcut = {
   sel: (k, sel, ...mods) => ({k:k, sel:sel, mods:mods}),
   fun: (k, fn, ...mods) => ({k:k, fn:fn, mods:mods}),
+  // 'a'.charCodeAt() == 96, e.which == 65 for 'a'
+  kcode: k => k.charCodeAt ? k.charCodeAt() - 32 : k;
   norm: (...modKeys) => F.retSelf(shortcut => {
-    // 'a'.charCodeAt() == 96, e.which == 65 for 'a'
-    const keyIsString = shortcut.k.charCodeAt;
-    if (keyIsString) shortcut.k = shortcut.k.charCodeAt() - 32;
-    if (shortcut.fn) shortcut.fn = F.retT(shortcut.fn);
+    shortcut.k = Shortcut.kcode(shortcut.k);
+    if (shortcut.fn) shortcut.fn = F.retTrue(shortcut.fn);
     shortcut.mods = (shortcut.mods||[]).concat(modKeys.map(m => ({
       s:e => e.ShiftKey, a: e => e.altKey, c: e => e.ctrlKey, m: e => e.metaKey
     })[m]))
