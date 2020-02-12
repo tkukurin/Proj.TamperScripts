@@ -1,48 +1,12 @@
 // cf. https://stackoverflow.com/questions/24042953/how-to-automatically-load-a-local-script-file-in-an-external-website
 // ==UserScript==
-// @name         Lib
+// @name         TamperLib
 // @namespace    tkukurin
 // @version      0.1
 // @description  Generic functions
-// @author       Toni
-// @match
+// @author       Toni Kukurin
 // @grant        none
 // ==/UserScript==
-
-
-// TODO softlink this to proj/
-
-
-const ret = val => fn => args => {fn(args); return val};
-const retArg = fn => a => ret(a)(fn)(a);
-const retTrue = ret(true);
-const retFalse = ret(false);
-
-const chk = (x, fn) => x && fn(x);
-const qe = (e, s, fn) => chk(e.querySelector(s), fn);
-const qd = (s, fn) => qe(document, s, fn);
-
-// {k:key, sel:selector to clck, fn:custom fn, mods:modifier keys}
-const sse = (k, sel, ...mods) => ({k:k, sel:sel, mods:mods});
-const sfn = (k, fn, ...mods) => ({k:k, fn:fn, mods:mods});
-const norm = (...modKeys) => retArg(s => {
-  // 'a'.charCodeAt() == 96, e.which == 65 for 'a'
-  if (s.k.charCodeAt) s.k = s.k.charCodeAt() - 32;
-  if (s.fn) s.fn = retTrue(s.fn);
-  s.mods = (s.mods||[]).concat(modKeys.map(m => ({
-    s:e => e.ShiftKey, a: e => e.altKey, c: e => e.ctrlKey, m: e => e.metaKey
-  })[m]))
-});
-
-const shortcuts = shorts => (e) => {
-  shorts.forEach(s => {
-    if (s.mods.every(mod => mod(e)) && e.which == s.k) {
-      // if s.fn returns true, don't click anything
-      (s.fn && s.fn(e)) || qd(s.sel, x=>x.click());
-      (e.stopPropagation && e.stopPropagation());
-    }
-  });
-}
 
 // Function wrappers
 const F = {};
