@@ -8,16 +8,7 @@
 // @grant        none
 // ==/UserScript==
 
-// Function wrappers
-const F = {};
-F.bestEffort = x => {try{return x();}catch(e){}};
-F.guard = x => (x && Promise.resolve(x)) || Promise.reject();
-F.ret = val => fn => args => {fn(args); return val};
-F.retSelf = fn => a => F.ret(a)(fn)(a);
-F.retTrue = F.ret(true);
-F.retFalse = F.ret(false);
-
-// Query
+// TODO(tk) investigate if this will work in any situation
 NodeList.prototype.forEach = Array.prototype.forEach;
 NodeList.prototype.flatMap = Array.prototype.flatMap;
 NodeList.prototype.filter = Array.prototype.filter;
@@ -28,6 +19,16 @@ HTMLCollection.prototype.flatMap = Array.prototype.flatMap;
 HTMLCollection.prototype.filter = Array.prototype.filter;
 HTMLCollection.prototype.map = Array.prototype.map;
 
+// Function wrappers
+const F = {};
+F.bestEffort = x => {try{return x();}catch(e){}};
+F.guard = x => (x && Promise.resolve(x)) || Promise.reject();
+F.ret = val => fn => args => {fn(args); return val};
+F.retSelf = fn => a => F.ret(a)(fn)(a);
+F.retTrue = F.ret(true);
+F.retFalse = F.ret(false);
+
+// Query
 const Q = {}
 Q.el = (el, sel) => F.guard(el.querySelector(sel));
 Q.doc = (sel) => Q.el(document, sel);
