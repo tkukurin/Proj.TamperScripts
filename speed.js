@@ -243,13 +243,13 @@ function defineVideoController() {
       mutations.forEach(mutation => {
         const n = mutation.attributeName;
         if (mutation.type === "attributes" && (n == "src" || n == "currentSrc")) {
-          var controller = this.vsc; // Q.doc(`div[data-vscid="${this.id}"]`)
-          if (!controller) return;
-          if (!mutation.target.src && !mutation.target.currentSrc) {
-            controller.classList.add("vsc-nosource");
-          } else {
-            controller.classList.remove("vsc-nosource");
-          }
+          Q.doc(`div[data-vscid="${this.id}"]`).then(controller => {
+            if (!mutation.target.src && !mutation.target.currentSrc) {
+              controller.classList.add("vsc-nosource");
+            } else {
+              controller.classList.remove("vsc-nosource");
+            }
+          });
         }
       });
     }).observe(target, {attributeFilter: ["src", "currentSrc"]});
