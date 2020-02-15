@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         TamperLib
 // @namespace    tkukurin
-// @version      0.1
+// @version      0.2
 // @description  Generic functions
 // @author       Toni Kukurin
 // @grant        none
@@ -21,8 +21,11 @@ HTMLCollection.prototype.map = Array.prototype.map;
 
 // Function wrappers
 const F = {};
-F.bestEffort = x => {try{return x();}catch(e){}};
-F.guard = x => (x && Promise.resolve(x)) || Promise.reject();
+F.bestEffort = (fn, logOnException) => ((...a) => {
+  try { return fn(...a); }
+  catch(e) { logOnException && console.error(e); }
+});
+F.guard = x => (x && Promise.resolve(x)) || Promise.reject(`${x} not found`);
 F.ret = val => fn => args => {fn(args); return val};
 F.retSelf = fn => a => F.ret(a)(fn)(a);
 F.retTrue = F.ret(true);
@@ -44,12 +47,15 @@ const Shortcut = {
 Shortcut.init = shortcuts => Shortcut._init(
   Array.isArray(shortcuts) ? shortcuts : Object.entries(shortcuts).flatMap(
     str2shortObj => str2shortObj[1].map(Shortcut.norm(str2shortObj[0]))
+    // Consider: sort by #modifiers and pick only one shortctut in init
+    //.sort((x, y) => y.mods.length - x.mods.length)
 ))
 
 Shortcut._init = shortcuts => e => shortcuts.forEach(shortcut => {
   if (shortcut.mods.every(mod => mod(e)) && e.which == shortcut.k) {
     // If s.fn returns true (was invoked), don't click anything
-    (shortcut.fn && shortcut.fn(e)) || Q.doc(shortcut.sel).then(x => x.click());
+    (shortcut.fn && shortcut.fn(e)) || shortcut.sel.forEach(
+      F.bestEffort(async s => { (await Q.doc(s)).click(); }));
     (e.stopPropagation && e.stopPropagation());
   }
 });
@@ -57,8 +63,9 @@ Shortcut._init = shortcuts => e => shortcuts.forEach(shortcut => {
 Shortcut.norm = (...modKeys) => F.retSelf(shortcut => {
   shortcut.k = Shortcut.kcode(shortcut.k);
   if (shortcut.fn) shortcut.fn = F.retTrue(shortcut.fn);
-  shortcut.mods = (shortcut.mods||[]).concat(modKeys.map(m => ({
-    s:e => e.ShiftKey, a: e => e.altKey, c: e => e.ctrlKey, m: e => e.metaKey
-  })[m]))
+  if (!Array.isArray(shortcut.sel)) shortcut.sel = [shortcut.sel];
+  shortcut.mods = (shortcut.mods||[]).concat(modKeys).map(m => ({
+    s:e => e.ShiftKey, a: e => e.altKey, c: e => e.ctrlKey, m: e => e.metaKey,
+  })[m])
 });
 
