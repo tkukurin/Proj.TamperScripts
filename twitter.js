@@ -2,7 +2,7 @@
 // @name         Twitter
 // @namespace    tkukurin
 // @version      1.0
-// @description  Copy threads from Twitter.
+// @description  Twitter thread copy
 // @author       Toni Kukurin
 // @match        https://twitter.com/*
 // @require      file:///home/toni/.config/tampermonkey/include.js
@@ -35,12 +35,15 @@ class Thread {
 (function() {
   'use strict';
 
-  let TIMELINE_ARIA = 'Timeline: Conversation'
+  const TIMELINE_ARIA = 'Timeline: Conversation'
 
-  function addIfThread(nodes) {
+  function addIfThread(thread, nodes) {
     Array.from(nodes)
       .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
-      .map(node => ({text:node.querySelector('[lang="en"]'), time: node.querySelector('time')}))
+      .map(node => ({
+        text: node.querySelector('[lang="en"]'),
+        time: node.querySelector('time')
+      }))
       .filter(node => node.text)
       .forEach(obj => thread.add({
         text: obj.text.textContent,
@@ -49,15 +52,16 @@ class Thread {
       }));
   }
 
-  let thread = new Thread();
-  // NOTE(tk) make accessible from console
-  window.thread = thread;
+  function initThreadReader(thread) {
+    // NOTE(tk) Don't do twice.
+    if (window.thread) return;
+    // NOTE(tk) make accessible from console
+    window.thread = thread;
 
-  function initThreadReader() {
     console.log('Thread read initd');
 
     let newNodeObserver = new MutationObserver(mutations =>
-      Array.from(mutations).map(m => m.addedNodes).forEach(addIfThread));
+      Array.from(mutations).map(m => m.addedNodes).forEach(ns => addIfThread(thread, ns)));
 
     let curHref = document.location.href;
     let hrefObserver = new MutationObserver((_, self) => {
@@ -72,13 +76,13 @@ class Thread {
     hrefObserver.observe(document.body, {childList:true, subtree:true});
     Q.doc('main').then(
       el => newNodeObserver.observe(el, {childList:true, subtree: true}));
-    const thread = Q.all(`[aria-label="${TIMELINE_ARIA}"] > div > div`);
-    addIfThread(thread);
+    const nodes = Q.all(`[aria-label="${TIMELINE_ARIA}"] > div > div`);
+    addIfThread(thread, nodes);
   }
 
   document.onkeyup = Shortcut.init({
     a: [
-      Shortcut.fun('t', initThreadReader),
+      Shortcut.fun('t', () => initThreadReader(new Thread())),
       Shortcut.fun('c', () => navigator.clipboard.writeText(thread.toString()))
     ],
   });
