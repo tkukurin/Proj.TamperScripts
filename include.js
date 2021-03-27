@@ -19,23 +19,84 @@ HTMLCollection.prototype.flatMap = Array.prototype.flatMap;
 HTMLCollection.prototype.filter = Array.prototype.filter;
 HTMLCollection.prototype.map = Array.prototype.map;
 
+const L = console.log;
+
 // Function wrappers
 const F = {};
 F.bestEffort = (fn, logOnException) => ((...a) => {
-  try { return fn(...a); }
-  catch(e) { logOnException && console.error(e); }
+  try {
+    return fn(...a);
+  } catch(e) {
+    logOnException && console.error(e);
+  }
 });
+F.ret = val => fn => (...a) => {
+  fn(...a);
+  return val;
+};
 F.guard = x => (x && Promise.resolve(x)) || Promise.reject(`${x} not found`);
-F.ret = val => fn => args => {fn(args); return val};
-F.retSelf = fn => a => F.ret(a)(fn)(a);
+F.retSelf = fn => (a) => F.ret(a)(fn)(a);
 F.retTrue = F.ret(true);
 F.retFalse = F.ret(false);
 
 // Query
 const Q = {}
-Q.el = (el, sel) => F.guard(el.querySelector(sel));
-Q.doc = (sel) => Q.el(document, sel);
-Q.all = sel => document.querySelectorAll(sel);
+// TODO consolidate all and el?
+//Q.el = (el, sel) => F.guard(el.querySelector(sel));
+Q.el = (sel, el=document) => F.guard(el.querySelector(sel));
+Q.doc = (sel) => Q.el(sel, document); //Q.el(document, sel);
+Q.all = (sel, el=document) => el.querySelectorAll(sel);
+
+const Util = {};
+Util.newEl = (type, propsOrString) => {
+  const el = document.createElement(type);
+  if (typeof(propsOrString) === 'string') {
+    el.innerHTML = propsOrString;
+  } else {
+    for (let prop in propsOrString) {
+      el[prop] = propsOrString[prop];
+    }
+  }
+  return el;
+}
+
+// cf. https://www.w3schools.com/howto/howto_js_snackbar.asp
+// TODO(tk) could technically cache & not remove style attribute, but I don't
+// expect to use this a lot.
+Util.toast = text => {
+  const style = Util.newEl('style', `._tmSnackbar {
+  visibility: hidden;
+  min-width: 250px;
+  margin-left: -125px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 2px;
+  padding: 16px;
+  position: fixed;
+  z-index: 1;
+  left: 50%;
+  bottom: 30px;
+}
+._tmSnackbar._tmShow {
+  visibility: visible;
+  -webkit-animation: _tmFadein 0.5s, _tmFadeout 0.5s 2.5s;
+  animation: _tmFadein 0.5s, _tmFadeout 0.5s 2.5s;
+}
+@-webkit-keyframes _tmFadein {from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: .8;} }
+@keyframes _tmFadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: .8;} }
+@-webkit-keyframes _tmFadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
+@keyframes _tmFadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }`);
+  const el = Util.newEl('div', {className: '_tmSnackbar _tmShow', innerHTML: text});
+
+  document.head.appendChild(style);
+  document.body.prepend(el);
+
+  setTimeout(() => el.parentElement.removeChild(el), 3000);
+  setTimeout(() => style.parentElement.removeChild(style), 3000);
+
+  return el;
+}
 
 const Shortcut = {
   sel: (k, sel, ...mods) => ({k:k, sel:sel, mods:mods}),
