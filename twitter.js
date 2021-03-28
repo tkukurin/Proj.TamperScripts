@@ -59,6 +59,7 @@ class Thread {
     window.thread = thread;
 
     console.log('Thread read initd');
+    Util.toast('Thread read init.');
 
     let newNodeObserver = new MutationObserver(mutations =>
       Array.from(mutations).map(m => m.addedNodes).forEach(ns => addIfThread(thread, ns)));

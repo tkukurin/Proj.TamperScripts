@@ -48,7 +48,7 @@ Q.all = (sel, el=document) => el.querySelectorAll(sel);
 const Util = {};
 Util.newEl = (type, propsOrString) => {
   const el = document.createElement(type);
-  if (typeof(props) === 'string') {
+  if (typeof(propsOrString) === 'string') {
     el.innerHTML = propsOrString;
   } else {
     for (let prop in propsOrString) {
