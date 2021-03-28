@@ -26,8 +26,12 @@ class CaptionTracker {
   }
 
   update(textLines) {
+    // heuristic: assume still the same line if first K characters match
+    // Subtitles are updated in chunks as they are spoken, not sure if there's
+    // an easier way to get the same result.
     const prev = this.captions[this.cIndex];
-    const part = prev.substr(0, Math.min(prev.length, 10));
+    const heuristicCharCount = 10;
+    const part = prev.substr(0, Math.min(prev.length, heuristicCharCount));
     if (!(textLines[0]).startsWith(part)) {
       this.cIndex = (this.cIndex + 1) % this.captions.length;
     }
@@ -37,8 +41,10 @@ class CaptionTracker {
     return this;
   }
 
+  _resetCaptions() { this.captions.fill(''); }
+
   reset(isActive) {
-    this.captions.fill('');
+    this._resetCaptions();
     this.isActive = isActive;
     if (!this.isActive) {
       this.observer.disconnect();
@@ -50,6 +56,7 @@ class CaptionTracker {
   }
 
   get() {
+    // Get subtitles in sequence as they appeared.
     const ci = this.cIndex;
     const text1 = this.captions.slice(0, ci + 2).join('\n');
     const text2 = this.captions.slice(ci + 2, this.captions.length).join('\n');

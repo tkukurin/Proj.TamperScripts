@@ -12,7 +12,8 @@
 
 (function() {
   const captionTracker = new CaptionTracker(
-    10, '#player-container', '.captions-text').reset(true);
+    100, '#player-container', '.captions-text');
+  window.captionTracker = captionTracker;
 
   function copyUrl() {
     const secMinHr = ['s','m','h'];
@@ -27,7 +28,23 @@
       .then(t => ((id && `https://youtu.be/${id[1]}?t=${t}`)
         || window.location.href.replace(/&t\=[^&]+/, `&t=${t}`)))
       .then(url => `${url} ${captionTracker.get()}`.trim())
-      .then(copyText => navigator.clipboard.writeText(copyText));
+      .then(copyText => navigator.clipboard.writeText(copyText))
+      .then(_ => Util.toast(
+        `Copied time ${captionTracker.isActive ? 'with' : 'without'} captions`));
+  }
+
+  function ensureSubtitles() {
+    return Q.el('.ytp-subtitles-button')
+      .then(el => el['aria-pressed'] || el.click())
+  }
+
+  function subtitleTrackToggle() {
+    captionTracker.reset(!captionTracker.isActive);
+    if (captionTracker.isActive) {
+      ensureSubtitles().then(_ => Util.toast('Captions on'));
+    } else {
+      Util.toast('Captions off');
+    }
   }
 
   window.onkeyup = document.onkeyup = Shortcut.init({
@@ -43,7 +60,7 @@
       Shortcut.sel('s', '.ytp-subtitles-button'),
       Shortcut.sel('b', '.ytp-fullscreen-button'),
 
-      Shortcut.fun('o', () => captionTracker.reset(!captionTracker.isActive)),
+      Shortcut.fun('o', subtitleTrackToggle),
     ],
     m: [Shortcut.sel('b', '.ytp-fullscreen-button.ytp-button'),]
   });
