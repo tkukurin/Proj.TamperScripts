@@ -96,6 +96,12 @@ Util.toast = text => {
   return el;
 }
 
+Util.observe = (f, el=document.body, opts={childList:true, subtree:true}) => {
+  const observer = new MutationObserver(f);
+  observer.observe(el, opts);
+  return observer;
+}
+
 const Shortcut = {
   sel: (k, sel, ...mods) => ({k:k, sel:sel, mods:mods}),
   fun: (k, fn, ...mods) => ({k:k, fn:fn, mods:mods}),
