@@ -41,16 +41,14 @@ F.retFalse = F.ret(false);
 
 // Query
 const Q = {}
-// TODO consolidate all and el?
-//Q.el = (el, sel) => F.guard(el.querySelector(sel));
 Q.el = (sel, el=document) => F.guard(el.querySelector(sel));
-Q.doc = (sel) => Q.el(sel, document); //Q.el(document, sel);
+Q.doc = (sel) => Q.el(sel, document);
 Q.all = (sel, el=document) => el.querySelectorAll(sel);
 
 const Util = {};
 Util.newEl = (type, propsOrString) => {
   const el = document.createElement(type);
-  if (typeof(propsOrString) === 'string') {
+  if (typeof(props) === 'string') {
     el.innerHTML = propsOrString;
   } else {
     for (let prop in propsOrString) {
