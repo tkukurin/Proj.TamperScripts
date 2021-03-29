@@ -35,7 +35,7 @@
 
   function ensureSubtitles() {
     return Q.el('.ytp-subtitles-button')
-      .then(el => el['aria-pressed'] || el.click())
+      .then(el => el.ariaPressed === 'true' || el.click())
   }
 
   function subtitleTrackToggle() {
