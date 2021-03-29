@@ -59,22 +59,19 @@ Util.newEl = (type, propsOrString) => {
 }
 
 // cf. https://www.w3schools.com/howto/howto_js_snackbar.asp
-// TODO(tk) could technically cache & not remove style attribute, but I don't
-// expect to use this a lot.
+// TODO(tk) could cache elements for speed, but I don't expect to use this a lot
 Util.toast = text => {
   const toast = Util.newEl('div', {className: '_tst', innerHTML: text});
-  const style = Util.newEl('style', `._tst{z-index:1;left:50%;bottom:30px;
-  min-width:250px;margin-left:-125px;background:#333;color:#fff;
-  text-align:center;border-radius:2px;padding:16px;position:fixed;
-  animation: _aI 0.5s, _aO 0.5s 2.5s}
-@keyframes _aI {from {bottom:0;opacity:0} to {bottom:30px;opacity:.8}}
+  const style = Util.newEl('style', `._tst{z-index:1;left:50%;bottom:30px;position:fixed;
+min-width:250px;margin-left:-125px;background:#333;color:#fff;text-align:center;
+border-radius:2px;padding:16px;animation: _aI .5s, _aO 1s 2s}
+@keyframes _aI {from {bottom:0;opacity:0} to {bottom:30px;opacity:1}}
 @keyframes _aO {from {bottom:30px;opacity:1} to {bottom:0;opacity:0}}`);
 
   document.head.appendChild(style);
   document.body.prepend(toast);
 
-  setTimeout(() => toast.parentElement.removeChild(toast), 3000);
-  setTimeout(() => style.parentElement.removeChild(style), 3000);
+  setTimeout(() => toast.remove() || style.remove(), 3000);
 
   return toast;
 }
