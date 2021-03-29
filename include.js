@@ -62,38 +62,21 @@ Util.newEl = (type, propsOrString) => {
 // TODO(tk) could technically cache & not remove style attribute, but I don't
 // expect to use this a lot.
 Util.toast = text => {
-  const style = Util.newEl('style', `._tmSnackbar {
-  visibility: hidden;
-  min-width: 250px;
-  margin-left: -125px;
-  background-color: #333;
-  color: #fff;
-  text-align: center;
-  border-radius: 2px;
-  padding: 16px;
-  position: fixed;
-  z-index: 1;
-  left: 50%;
-  bottom: 30px;
-}
-._tmSnackbar._tmShow {
-  visibility: visible;
-  -webkit-animation: _tmFadein 0.5s, _tmFadeout 0.5s 2.5s;
-  animation: _tmFadein 0.5s, _tmFadeout 0.5s 2.5s;
-}
-@-webkit-keyframes _tmFadein {from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: .8;} }
-@keyframes _tmFadein { from {bottom: 0; opacity: 0;} to {bottom: 30px; opacity: .8;} }
-@-webkit-keyframes _tmFadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }
-@keyframes _tmFadeout { from {bottom: 30px; opacity: 1;} to {bottom: 0; opacity: 0;} }`);
-  const el = Util.newEl('div', {className: '_tmSnackbar _tmShow', innerHTML: text});
+  const toast = Util.newEl('div', {className: '_tst', innerHTML: text});
+  const style = Util.newEl('style', `._tst{z-index:1;left:50%;bottom:30px;
+  min-width:250px;margin-left:-125px;background:#333;color:#fff;
+  text-align:center;border-radius:2px;padding:16px;position:fixed;
+  animation: _aI 0.5s, _aO 0.5s 2.5s}
+@keyframes _aI {from {bottom:0;opacity:0} to {bottom:30px;opacity:.8}}
+@keyframes _aO {from {bottom:30px;opacity:1} to {bottom:0;opacity:0}}`);
 
   document.head.appendChild(style);
-  document.body.prepend(el);
+  document.body.prepend(toast);
 
-  setTimeout(() => el.parentElement.removeChild(el), 3000);
+  setTimeout(() => toast.parentElement.removeChild(toast), 3000);
   setTimeout(() => style.parentElement.removeChild(style), 3000);
 
-  return el;
+  return toast;
 }
 
 Util.observe = (f, el=document.body, opts={childList:true, subtree:true}) => {
