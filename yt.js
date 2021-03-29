@@ -18,16 +18,17 @@
   function copyUrl() {
     const secMinHr = ['s','m','h'];
     const id = /\?v\=([^&]+)/g.exec(window.location.search);
-    // Hack: Fake double-click to show the bottom bar.
-    // Updates current video time display.
-    Q.doc('video').then(el => el.click() || el.click());
-    Q.doc('.ytp-time-current')
-      .then(el => el.innerText.split(':'))
+    // NOTE(tk) could also just use ?t=vid.currentTime
+    // but having h/m/s is semantically nicer
+    Q.doc('video')
+      .then(vid => vid.currentTime)
+      .then(time => [time/3600, time/60, (time%60)])
+      .then(times => times.map(n => parseInt(n)).filter(t => t))
       .then(times => times.reverse().map((nr, i) => nr + secMinHr[i]).reverse())
       .then(timesWithSmh => timesWithSmh.join(''))
       .then(t => ((id && `https://youtu.be/${id[1]}?t=${t}`)
         || window.location.href.replace(/&t\=[^&]+/, `&t=${t}`)))
-      .then(url => `${url} ${captionTracker.get()}`.trim())
+      .then(url => `${url}\n${captionTracker.get()}`.trim())
       .then(copyText => navigator.clipboard.writeText(copyText))
       .then(_ => Util.toast(
         `Copied time ${captionTracker.isActive ? 'with' : 'without'} captions`));
