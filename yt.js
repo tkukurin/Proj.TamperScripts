@@ -16,15 +16,15 @@
   window.captionTracker = captionTracker;
 
   function copyUrl() {
-    const secMinHr = ['s','m','h'];
+    const hrMinSec = ['h','m','s'];
     const id = /\?v\=([^&]+)/g.exec(window.location.search);
     // NOTE(tk) could also just use ?t=vid.currentTime
     // but having h/m/s is semantically nicer
     Q.doc('video')
       .then(vid => vid.currentTime)
       .then(time => [time/3600, time/60, (time%60)])
-      .then(times => times.map(n => parseInt(n)).filter(t => t))
-      .then(times => times.reverse().map((nr, i) => nr + secMinHr[i]).reverse())
+      .then(times => times.map(n => parseInt(n)))
+      .then(times => times.map((n, i) => n ? `${n}${hrMinSec[i]}` : ''))
       .then(timesWithSmh => timesWithSmh.join(''))
       .then(t => ((id && `https://youtu.be/${id[1]}?t=${t}`)
         || window.location.href.replace(/&t\=[^&]+/, `&t=${t}`)))
