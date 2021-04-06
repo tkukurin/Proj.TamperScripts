@@ -41,12 +41,13 @@ class Thread {
     Array.from(nodes)
       .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
       .map(node => ({
-        text: node.querySelector('[lang="en"]'),
+        // NOTE(tk) seems usually 1st is original tweet, 2nd is quote tweet
+        texts: node.querySelectorAll('[lang="en"]'),
         time: node.querySelector('time')
       }))
-      .filter(node => node.text)
+      .filter(node => node.texts)
       .forEach(obj => thread.add({
-        text: obj.text.textContent,
+        text: obj.texts.map(n => n.textContent).join('\n> ').trim(),
         // We're okay with NaN if time is not available.
         time: new Date((obj.time || {}).dateTime).getTime(),
       }));
@@ -84,7 +85,8 @@ class Thread {
   document.onkeyup = Shortcut.init({
     a: [
       Shortcut.fun('t', () => initThreadReader(new Thread())),
-      Shortcut.fun('c', () => navigator.clipboard.writeText(thread.toString()))
+      Shortcut.fun('c', () => navigator.clipboard.writeText(
+        `${document.location.href}\n${thread.toString()}`))
     ],
   });
 
