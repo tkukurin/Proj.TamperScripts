@@ -12,6 +12,7 @@
 (function() {
   'use strict';
   const base = 'https://sourcegraph.com/';
+  const isCommit = commit => /^[0-9a-f]{40}$/.test(commit);
   document.onkeyup = Shortcut.init({
     a: [
       Shortcut.fun('s', () => {
@@ -19,8 +20,9 @@
         if (cs.length < 2) return;
         let user = cs[0];
         let repo = cs[1];
+        let maybeCommit = cs[3] ? `@${cs[3]}` : '';
         let rest = cs.slice(4).join('/');
-        window.location.href = `${base}/github.com/${user}/${repo}/-/blob/${rest}`;
+        window.location.href = `${base}/github.com/${user}/${repo}${maybeCommit}/-/blob/${rest}`;
       })
     ],
   });
