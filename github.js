@@ -12,7 +12,6 @@
 (function() {
   'use strict';
   const base = 'https://sourcegraph.com/';
-  const isCommit = commit => /^[0-9a-f]{40}$/.test(commit);
   document.onkeyup = Shortcut.init({
     a: [
       Shortcut.fun('s', () => {
