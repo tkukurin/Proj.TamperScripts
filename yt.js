@@ -21,7 +21,7 @@
     // but having h/m/s is semantically nicer
     Q.doc('video')
       .then(vid => vid.currentTime)
-      .then(time => [time/3600, time/60, (time%60)])
+      .then(time => [time/3600, (time/60)%60, (time%60)])
       .then(ts => ts.map(n => parseInt(n)))
       .then(ts => ts.map((n, i) => n ? `${n}${'hms'[i]}`.padStart(3, 0) : ''))
       .then(tsWithTime => tsWithTime.join(''))
