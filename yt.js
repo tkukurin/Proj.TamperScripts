@@ -16,7 +16,12 @@
   window.captionTracker = captionTracker;
 
   function copyUrl() {
-    const id = /\?v\=([^&]+)/g.exec(window.location.search);
+    function timeToUrl(timeStr) {
+      const id = /\?v\=([^&]+)/g.exec(window.location.search);
+      const url = (id && `https://youtu.be/${id[1]}?t=${timeStr}`) ||
+        window.location.href.replace(/&t\=[^&]+/, `&t=${timeStr}`);
+      return {t: timeStr, url: url};
+    }
     // NOTE(tk) could also just use ?t=vid.currentTime
     // but having h/m/s is semantically nicer
     Q.doc('video')
@@ -25,9 +30,8 @@
       .then(ts => ts.map(n => parseInt(n)))
       .then(ts => ts.map((n, i) => n ? `${n}${'hms'[i]}`.padStart(3, 0) : ''))
       .then(tsWithTime => tsWithTime.join(''))
-      .then(t => ((id && `https://youtu.be/${id[1]}?t=${t}`)
-        || window.location.href.replace(/&t\=[^&]+/, `&t=${t}`)))
-      .then(url => `${url}\n${captionTracker.get()}`.trim())
+      .then(timeToUrl)
+      .then(({t, url}) => `[@${t}](${url})\n${captionTracker.get()}`.trim())
       .then(copyText => navigator.clipboard.writeText(copyText))
       .then(_ => Util.toast(
         `Copied time ${captionTracker.isActive ? 'with' : 'without'} captions`));
