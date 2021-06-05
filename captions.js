@@ -23,25 +23,29 @@ class CaptionTracker {
         }
       }
     });
+    this.reset(true);
   }
 
   update(textLines) {
     // heuristic: assume still the same line if first K characters match
     // Subtitles are updated in chunks as they are spoken, not sure if there's
     // an easier way to get the same result.
-    const prev = this.captions[this.cIndex];
     const heuristicCharCount = 10;
-    const part = prev.substr(0, Math.min(prev.length, heuristicCharCount));
-    if (!(textLines[0]).startsWith(part)) {
-      this.cIndex = (this.cIndex + 1) % this.captions.length;
+    const wrapIdx = (idx, inc=1) => (idx + inc) % this.captions.length;
+    const part = this.captions[this.cIndex].substr(0, heuristicCharCount);
+    if (!textLines[0].startsWith(part)) {
+      // increment current idx by 2 if neither textLines match the current line
+      // (this means both subtitle lines changed at once, instead of a gradual
+      // transition - usually happens if the video is sped up)
+      let inc = 1 + (textLines[1] && !textLines[1].startsWith(part));
+      this.cIndex = wrapIdx(this.cIndex, inc);
     }
-
     this.captions[this.cIndex] = textLines[0];
     this.captions[(this.cIndex+1) % this.captions.length] = textLines[1] || '';
     return this;
   }
 
-  _resetCaptions() { this.captions.fill(''); }
+  _resetCaptions() { this.captions.fill(''); this.cIndex = 0; }
 
   reset(isActive) {
     this._resetCaptions();
