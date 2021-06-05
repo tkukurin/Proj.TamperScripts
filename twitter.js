@@ -28,7 +28,7 @@ class Thread {
 
   toString() {
     this.content = this.content.sort(c => c.time);
-    return this.content.map(c => c.text).join('\n');
+    return this.content.map(c => c.text).join('\n\n');
   }
 }
 
@@ -47,7 +47,8 @@ class Thread {
       }))
       .filter(node => node.texts)
       .forEach(obj => thread.add({
-        text: obj.texts.map(n => n.textContent).join('\n> ').trim(),
+        text: obj.texts.map(n => n.textContent)
+          .map(t => t.replace(/\n+/, ' ')).join('\n> ').trim(),
         // We're okay with NaN if time is not available.
         time: new Date((obj.time || {}).dateTime).getTime(),
       }));
@@ -85,8 +86,15 @@ class Thread {
   document.onkeyup = Shortcut.init({
     a: [
       Shortcut.fun('t', () => initThreadReader(new Thread())),
-      Shortcut.fun('c', () => navigator.clipboard.writeText(
-        `${document.location.href}\n${thread.toString()}`))
+      Shortcut.fun('c', () => {
+        const threadContent = thread.toString();
+        if (threadContent) {
+          navigator.clipboard.writeText(`${document.location.href}\n${threadContent}`);
+          Util.toast('Copied');
+        } else {
+          Util.toast('NOTE: no thread content.');
+        }
+      })
     ],
   });
 
