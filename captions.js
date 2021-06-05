@@ -35,7 +35,8 @@ class CaptionTracker {
     // anywhere 1-3 lines long. Quickest guessing algo that comes to mind.
     for (let i = this.cIndex - 3; i <= this.cIndex + 3; i++) {
       let wrappedI = wrapIdx(i);
-      const part = this.captions[wrappedI].substr(0, heuristicCharCount);
+      let part = this.captions[wrappedI];
+      part = part.substr(0, Math.min(part.length, heuristicCharCount));
       if (part && textLines[0].startsWith(part)) {
         this.cIndex = wrappedI;
         break;
