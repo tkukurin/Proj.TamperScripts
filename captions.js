@@ -27,21 +27,26 @@ class CaptionTracker {
   }
 
   update(textLines) {
-    // heuristic: assume still the same line if first K characters match
-    // Subtitles are updated in chunks as they are spoken, not sure if there's
-    // an easier way to get the same result.
     const heuristicCharCount = 10;
-    const wrapIdx = (idx, inc=1) => (idx + inc) % this.captions.length;
-    const part = this.captions[this.cIndex].substr(0, heuristicCharCount);
-    if (!textLines[0].startsWith(part)) {
-      // increment current idx by 2 if neither textLines match the current line
-      // (this means both subtitle lines changed at once, instead of a gradual
-      // transition - usually happens if the video is sped up)
-      let inc = 1 + (textLines[1] && !textLines[1].startsWith(part));
-      this.cIndex = wrapIdx(this.cIndex, inc);
+    const wrapIdx = i => (i + this.captions.length) % this.captions.length;
+
+    // Heuristic: assume still the same line if first K characters match
+    // Subtitles are updated in chunks as they are spoken, and textLines can be
+    // anywhere 1-3 lines long. Quickest guessing algo that comes to mind.
+    for (let i = this.cIndex - 3; i <= this.cIndex + 3; i++) {
+      let wrappedI = wrapIdx(i);
+      const part = this.captions[wrappedI].substr(0, heuristicCharCount);
+      if (part && textLines[0].startsWith(part)) {
+        this.cIndex = wrappedI;
+        break;
+      }
     }
-    this.captions[this.cIndex] = textLines[0];
-    this.captions[(this.cIndex+1) % this.captions.length] = textLines[1] || '';
+
+    for (let j = 0; j < textLines.length; j++) {
+      this.cIndex = wrapIdx(this.cIndex + j)
+      this.captions[this.cIndex] = textLines[j];
+    }
+
     return this;
   }
 
