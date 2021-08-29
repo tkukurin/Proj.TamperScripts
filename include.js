@@ -43,6 +43,7 @@ F.retFalse = F.ret(false);
 const Q = {}
 Q.el = (sel, el=document) => F.guard(el.querySelector(sel));
 Q.doc = (sel) => Q.el(sel, document);
+Q.one = (sel, el=document) => el.querySelector(sel);
 Q.all = (sel, el=document) => el.querySelectorAll(sel);
 
 const Util = {};
@@ -88,8 +89,8 @@ Util.sidebar = content => {
   function _stoggle() {
     let width = _open ? 0 : '250px';
     let inner = _open ? '&larr;' : '&times;';
-    Q.doc('._sbtn').then(el => el.innerHTML = inner);
-    Q.doc('._side').then(el => el.style.width = width);
+    Q.el('._sbtn').then(el => el.innerHTML = inner);
+    Q.el('._side').then(el => el.style.width = width);
     document.body.style.marginLeft = width;
     _open = !_open;
   }
@@ -126,7 +127,7 @@ Shortcut._init = shortcuts => e => shortcuts.forEach(shortcut => {
   if (shortcut.mods.every(mod => mod(e)) && e.which == shortcut.k) {
     // If s.fn returns true (was invoked), don't click anything
     (shortcut.fn && shortcut.fn(e)) || shortcut.sel.forEach(
-      F.bestEffort(async s => { (await Q.doc(s)).click(); }));
+      F.bestEffort(s => Q.one(s).click()));
     (e.stopPropagation && e.stopPropagation());
   }
 });
