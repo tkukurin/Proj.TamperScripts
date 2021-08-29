@@ -9,21 +9,32 @@
 // @grant        none
 // ==/UserScript==
 
+const TIMELINE_ARIA = 'Timeline: Conversation';
+
 class Thread {
-  constructor() {
-    this.content = [];
+  content = []
+
+  addFrom(nodes) {
+    Array.from(nodes)
+      .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
+      .map(node => ({
+        // NOTE(tk) seems usually 1st is original tweet, 2nd is quote tweet
+        texts: node.querySelectorAll('[lang="en"]'),
+        time: node.querySelector('time')
+      }))
+      .filter(node => node.texts)
+      .forEach(obj => this.#add({
+        text: obj.texts.map(n => n.textContent)
+          .map(t => t.replace(/\n+/, ' ')).join('\n> ').trim(),
+        // We're okay with NaN if time is not available.
+        time: new Date((obj.time || {}).dateTime).getTime(),
+      }));
   }
 
-  add(obj) {
-    if (this.content.length > 500) {
-      // NOTE(tk) magic constant max threshold.
-      // in case of a bug, don't make the list unreasonably long.
-      return;
-    }
-
-    if (!this.content.find(o => o.text == obj.text)) {
-      this.content.push(obj);
-    }
+  #add(obj) {
+    if (this.content.length > 99) return; // don't make list unreasonably long
+    if (this.content.find(o => o.text == obj.text)) return;
+    this.content.push(obj);
   }
 
   toString() {
@@ -33,67 +44,38 @@ class Thread {
 }
 
 (function() {
-  'use strict';
-
-  const TIMELINE_ARIA = 'Timeline: Conversation'
-
-  function addIfThread(thread, nodes) {
-    Array.from(nodes)
-      .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
-      .map(node => ({
-        // NOTE(tk) seems usually 1st is original tweet, 2nd is quote tweet
-        texts: node.querySelectorAll('[lang="en"]'),
-        time: node.querySelector('time')
-      }))
-      .filter(node => node.texts)
-      .forEach(obj => thread.add({
-        text: obj.texts.map(n => n.textContent)
-          .map(t => t.replace(/\n+/, ' ')).join('\n> ').trim(),
-        // We're okay with NaN if time is not available.
-        time: new Date((obj.time || {}).dateTime).getTime(),
-      }));
-  }
-
   function initThreadReader(thread) {
-    // NOTE(tk) Don't do twice.
-    if (window.thread) return;
-    // NOTE(tk) make accessible from console
-    window.thread = thread;
+    if (window.thread) return;  // don't do twice.
+    window.thread = thread; // make accessible from console
 
-    console.log('Thread read initd');
     Util.toast('Thread read init.');
 
-    let newNodeObserver = new MutationObserver(mutations =>
-      Array.from(mutations).map(m => m.addedNodes).forEach(ns => addIfThread(thread, ns)));
+    let obsNewNodes = new MutationObserver(muts =>
+      Array.from(muts).map(m => m.addedNodes).forEach(ns => thread.addFrom(ns)));
 
     let curHref = document.location.href;
-    let hrefObserver = new MutationObserver((_, self) => {
+    Util.observe((_, self) => {
       if (curHref != document.location.href) {
         console.log('Changed href. Disconnect observer.');
         window.thread = undefined;
-        newNodeObserver.disconnect();
+        obsNewNodes.disconnect();
         self.disconnect();
       }
     });
 
-    hrefObserver.observe(document.body, {childList:true, subtree:true});
-    Q.doc('main').then(
-      el => newNodeObserver.observe(el, {childList:true, subtree: true}));
+    Q.el('main').then(el => obsNewNodes.observe(el, {childList:true, subtree: true}));
     const nodes = Q.all(`[aria-label="${TIMELINE_ARIA}"] > div > div`);
-    addIfThread(thread, nodes);
+    thread.addFrom(nodes);
   }
 
   document.onkeyup = Shortcut.init({
     a: [
       Shortcut.fun('t', () => initThreadReader(new Thread())),
       Shortcut.fun('c', () => {
-        const threadContent = thread.toString();
-        if (threadContent) {
-          navigator.clipboard.writeText(`${document.location.href}\n${threadContent}`);
-          Util.toast('Copied');
-        } else {
-          Util.toast('NOTE: no thread content.');
-        }
+        F.guard(window.thread).then(t => t.toString()).then(c =>
+            navigator.clipboard.writeText(`${document.location.href}\n${c}`)
+              && Util.toast('Copied'))
+          .catch(msg => Util.toast(`Error: "${msg}"<br/>Forgot thread init?`));
       })
     ],
   });
