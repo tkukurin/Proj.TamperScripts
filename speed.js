@@ -7,21 +7,20 @@
 // @author       tkukurin
 // @match        https://www.youtube.com/*
 // @match        https://vimeo.com/*
+// @match        https://www.twitch.tv/videos/*
+// @match        https://twitter.com/*
+// @match        https://slideslive.com/*
+// @match        http://videolectures.net/*
+// @match        https://complexityexplorer.org/*
+// @match        https://drive.google.com/*/view
 // @require      file:///home/toni/.config/tampermonkey/include.js
 // @grant        GM_addStyle
 // ==/UserScript==
 
 const injectCss = `.vsc-nosource, .vsc-hidden {display: none !important;}
-.vsc-manual {
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-
+.vsc-manual { visibility: visible !important; opacity: 1 !important; }
 /* Origin specific overrides */
-/* YouTube */ .ytp-hide-info-bar .vsc-controller {
-  position: relative;
-  top: 10px;
-}
+/* YT */ .ytp-hide-info-bar .vsc-controller { position: relative; top: 10px; }
 .ytp-autohide .vsc-controller {
   visibility: hidden;
   transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
@@ -55,44 +54,27 @@ GM_addStyle(injectCss);
 const shadowCss = (top, left, opacity) => `
   *{font: 13px/1.8em sans-serif}
   :host(:hover) #controls {display: inline}
-  #controller {
-    top:${top}; left:${left}; opacity:${opacity};
-    position: absolute;
-    background: black; color: white;
-    border-radius: 5px;
-    padding: 5px; margin: 10px 10px 10px 15px;
-    cursor: default;
-    z-index: 9999999;
-  }
+  #controller {top:${top}; left:${left}; opacity:${opacity}; position: absolute;
+    background: black; color: white; border-radius: 5px; padding: 5px; margin:
+    10px 10px 10px 15px; cursor: default; z-index: 9999999;}
   #controller:hover {opacity: 0.7}
-  #controls {display: none}
-  button {
-    cursor: pointer;
-    color: black;
-    background: white;
-    border-radius: 5px;
-    padding: 1px 6px 3px 6px;
-    border: 1px solid white;
-    font: bold 14px/1 monospace;
-    margin-bottom: 2px;
-  }
+  button {cursor: pointer; border-radius: 5px; padding: 1px 6px 3px 6px; border:
+  1px solid white; font: bold 14px/1 monospace; margin-bottom: 2px; }
   button:focus {outline: 0}
   button:hover {opacity: 1}
   button:active {background: #ccc}
   button.rw {opacity: 0.65}
   button.hideButton {margin-right: 2px;opacity: 0.5;}`;
+let controls = `<span id="controls">
+  <button data-action="rewind" class="rw">«</button>
+  <button data-action="slower">&minus;</button>
+  <button data-action="faster">&plus;</button>
+  <button data-action="advance" class="rw">»</button>
+  <button data-action="display" class="hideButton">&times;</button>
+</span>`; controls = ''; // NOTE(tk) disabled on purpose
 const shadowHTML = (top, left, opacity, speed) => `
   <style>${shadowCss(top, left, opacity)}</style>
-  <div id="controller">
-    <span>${speed}</span>
-    <span id="controls">
-      <button data-action="rewind" class="rw">«</button>
-      <button data-action="slower">-</button>
-      <button data-action="faster">+</button>
-      <button data-action="advance" class="rw">»</button>
-      <button data-action="display" class="hideButton">x</button>
-    </span>
-  </div>`;
+  <div id="controller"><span>${speed}</span>${controls}</div>`;
 
 const SPEED = 'speed';
 const tc = {
@@ -352,7 +334,7 @@ function initializeNow(document) {
     const inIframe = !window || window.self !== window.top;
     if (inIframe) docs.push(window.top.document);
   } catch (e) {
-    console.err(e);
+    console.error(e);
   }
 
   docs.forEach(function(doc) {
@@ -396,7 +378,6 @@ function initializeNow(document) {
   }
 
   new MutationObserver(function(mutations) {
-    // Process the DOM nodes lazily
     requestIdleCallback(_ => mutations.forEach(mutation => {
       switch (mutation.type) {
         case "childList":
@@ -416,12 +397,14 @@ function initializeNow(document) {
   Q.all(`video ${tc.settings.audioBoolean ? ',audio' : ''}`).forEach(
     node => node.vsc = new tc.videoController(node));
 
-  // Ignore frames we don't have permission to access (different origin).
+  // errors out on frames we don't have permission to access (different origin).
   Q.all('iframe').forEach(frame => initializeWhenReady(frame.contentDocument));
 }
 
 function runAction(action, document, value, e) {
-  Q.all(`video ${tc.settings.audioBoolean ? ',audio' : ''}`).forEach(function(v) {
+  Q.all(`iframe,video ${tc.settings.audioBoolean ? ',audio' : ''}`).forEach(function(v) {
+    if (!v.vsc) return;
+
     const controller = v.vsc.div;
     const hasOtherController = e && e.target.getRootNode().host != controller;
     const cancelled = v.matches(".vsc-cancelled");
