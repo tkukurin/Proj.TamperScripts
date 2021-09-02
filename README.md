@@ -5,7 +5,6 @@ Primarily adds shortcuts to websites.
 
 * YouTube: Copy current timestamp and recent captions to clipboard.
 * YouTube: Video speed control based on [igrigorik/videospeed](https://github.com/igrigorik/videospeed).
-* Evernote: Shortcuts for Evernote's old editor
 * GitHub: Shortcut to visit Sourcegraph or Colab for current page
 * Twitter: Copy contents of entire current thread as plain text
 
