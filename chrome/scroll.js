@@ -1,9 +1,13 @@
 console.log('Vim shortcuts loaded');
 
-
+const INPUT_TAGS = ['INPUT', 'TEXTAREA'];
 let state = null;
 
 window.addEventListener('keydown', e => {
+  if (INPUT_TAGS.indexOf(document.activeElement.tagName) >= 0) {
+    return;
+  }
+
   const AMOUNT = 50;
 
   let scrollY = 0;
