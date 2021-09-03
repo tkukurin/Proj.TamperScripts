@@ -59,6 +59,21 @@ Util.newEl = (type, propsOrString) => {
   return el;
 }
 
+/* some style
+  position: absolute;
+  color: #302505 !important;
+  background-color: #ffd76e !important;
+  border-radius: 2px !important;
+  padding: 2px !important;
+  font-size: 8pt !important;
+  font-weight: 500 !important;
+  text-transform: uppercase !important;
+  border: 1px solid #ad810c;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  text-align: center !important;
+  box-shadow: 2px 2px 1px rgba(0,0,0,0.25) !important;
+*/
 window.addEventListener('keydown', e => {
   if (INPUT_TAGS.indexOf(document.activeElement.tagName) >= 0
     || document.activeElement.contentEditable === 'true') {
@@ -71,33 +86,34 @@ window.addEventListener('keydown', e => {
 
   if (State.is('f')) {
     const follow = State.next(e.key);
+    if (follow >= 100) {
+      return State.reset();
+    }
     const link = State.attached[follow];
     if (link) {
-      link.click(); // window.location.href = link.href;
+      link.click();
       State.reset();
     }
     return;
   }
 
-  let scrollY = 0;
-  let scrollX = 0;
   const pageHeight = document.documentElement.scrollHeight;
   switch (e.key) {
     // up
-    case 'k': case 'w': scrollY = -SCROLL_BY; break;
-    case 'u': scrollY = -SCROLL_BY * 2; break;
+    case 'k': case 'w': window.scrollBy(0, -SCROLL_BY); break;
+    case 'u': window.scrollBy(0, -SCROLL_BY * 2); break;
 
     // down
-    case 'j': case 's': scrollY = SCROLL_BY; break;
-    case 'd': scrollY = SCROLL_BY * 2; break;
+    case 'j': case 's': window.scrollBy(0, SCROLL_BY); break;
+    case 'd': window.scrollBy(0, SCROLL_BY * 2); break;
 
     // left / right
-    case 'l': scrollX = SCROLL_BY; break;
-    case 'h': scrollX = -SCROLL_BY; break;
+    case 'l': window.scrollBy(SCROLL_BY, 0); break;
+    case 'h': window.scrollBy(-SCROLL_BY, 0); break;
 
     // full
-    case 'G': scrollY = pageHeight; break;
-    case 'g': scrollY = State.is('g') * -pageHeight; break;
+    case 'G': window.scrollBy(0, pageHeight); break;
+    case 'g': window.scrollBy(0, State.is('g') * -pageHeight); break;
 
     // history (return, no State change / fallthrough)
     case 'H': return window.history.back();
@@ -115,10 +131,9 @@ window.addEventListener('keydown', e => {
         }));
         State.attached[follow] = el;
       });
+      break;
   }
 
-  window.scrollBy(scrollX, scrollY);
   State.next(e.key);
 }, false);
-
 
