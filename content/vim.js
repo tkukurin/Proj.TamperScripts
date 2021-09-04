@@ -56,6 +56,7 @@ class BaseState extends State {
       case 'L': window.history.forward(); break;
 
       case 'f': return new FollowState();
+      case 'm': return new MarkState();
     }
     return this;
   }
@@ -68,6 +69,9 @@ class FollowState extends State {
     const _me = this;
     _me.links = {};
     _me.follow = '';
+    // TODO
+    //const clickables = (document.querySelectorAll('a').concat(
+    // document.querySelectorAll('button'));
     const chars = 'asdfqwertzxcv';  // or const k = i + 10?
     document.querySelectorAll('a').filter(Util.isVisible).forEach((el, i) => {
       const k = chars[parseInt(i / chars.length)] + chars[i % chars.length];
@@ -86,11 +90,36 @@ class FollowState extends State {
   _reset() { Object.values(this.links).forEach(e => e.lastChild.remove()); }
 }
 
+class MarkState extends State {
+  class Mark {
+    constructor(c) {
+      this.pos = {x: window.pageXOffset, y: window.pageYOffset};
+      this.sel = window.getSelection()?.anchorNode;
+      this.txt = this.sel?.data;
+    }
+  }
+  static Marks = {
+    _marks: {},  // global state :(
+    set: function(c) { this._marks[c] = new Mark(c); },
+    get: function(c) { return this._marks[c]; }
+  }
+  _next(c) {
+    switch(c) {
+      case 'g': console.error('Mark g taken'); break;
+      default: MarkState.Marks.set(c);
+    }
+    return this.reset();
+  }
+}
+
 class GotoState extends State {
   _next(c) {
     const pageHeight = document.documentElement.scrollHeight;
     switch(c) {
       case 'g': window.scrollBy(0, -pageHeight); break;
+      default:
+        const mark = MarkState.Marks.get(c);
+        window.scrollTo(mark.pos.x, mark.pos.y);
     }
     return this.reset();
   }
