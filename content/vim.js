@@ -1,18 +1,34 @@
 console.log('Vim shortcuts loaded');
 
-const SCROLL_BY = 50;
+const Settings = {
+  preventBubble: true,
+  scrollBy: 50,
+}
 
 class State {
   next(e) {
-    if (e.altKey && e.key == 'q') {
-      return new NullState();
+    if (e.altKey) {
+      switch (e.key) {
+        case 'q': return new NullState();
+        case 'p':
+          Settings.preventBubble = !Settings.preventBubble;
+          console.log(Settings);
+      }
     }
+
     if (e.metaKey || e.altKey || e.ctrlKey) {
       return this;
     }
+
     if (Util.isInput(document.activeElement) || e.key === 'Escape') {
       return this.reset();
     }
+
+    if (Settings.preventBubble) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
     return this._next(e.key);
   }
   _next() {}
@@ -33,22 +49,21 @@ class NullState extends State {
 
 class BaseState extends State {
   _next(c) {
-    const pageHeight = document.documentElement.scrollHeight;
     switch (c) {
       // up
-      case 'k': case 'w': window.scrollBy(0, -SCROLL_BY); break;
-      case 'u': window.scrollBy(0, -SCROLL_BY * 2); break;
+      case 'k': case 'w': window.scrollBy(0, -Settings.scrollBy); break;
+      case 'u': window.scrollBy(0, -Settings.scrollBy * 2); break;
 
       // down
-      case 'j': case 's': window.scrollBy(0, SCROLL_BY); break;
-      case 'd': window.scrollBy(0, SCROLL_BY * 2); break;
+      case 'j': case 's': window.scrollBy(0, Settings.scrollBy); break;
+      case 'd': window.scrollBy(0, Settings.scrollBy * 2); break;
 
       // left / right
-      case 'l': window.scrollBy(SCROLL_BY, 0); break;
-      case 'h': window.scrollBy(-SCROLL_BY, 0); break;
+      case 'l': window.scrollBy(Settings.scrollBy, 0); break;
+      case 'h': window.scrollBy(-Settings.scrollBy, 0); break;
 
       // full
-      case 'G': window.scrollBy(0, pageHeight); break;
+      case 'G': window.scrollBy(0, document.documentElement.scrollHeight); break;
       case 'g': return new GotoState();
 
       // history (return, no State change / fallthrough)
@@ -90,14 +105,15 @@ class FollowState extends State {
   _reset() { Object.values(this.links).forEach(e => e.lastChild.remove()); }
 }
 
-class MarkState extends State {
-  class Mark {
-    constructor(c) {
-      this.pos = {x: window.pageXOffset, y: window.pageYOffset};
-      this.sel = window.getSelection()?.anchorNode;
-      this.txt = this.sel?.data;
-    }
+class Mark {
+  constructor(c) {
+    this.pos = {x: window.pageXOffset, y: window.pageYOffset};
+    this.sel = window.getSelection()?.anchorNode;
+    this.txt = this.sel?.data;
   }
+}
+
+class MarkState extends State {
   static Marks = {
     _marks: {},  // global state :(
     set: function(c) { this._marks[c] = new Mark(c); },
@@ -114,9 +130,8 @@ class MarkState extends State {
 
 class GotoState extends State {
   _next(c) {
-    const pageHeight = document.documentElement.scrollHeight;
     switch(c) {
-      case 'g': window.scrollBy(0, -pageHeight); break;
+      case 'g': window.scrollTo(0, 0); break;
       default:
         const mark = MarkState.Marks.get(c);
         window.scrollTo(mark.pos.x, mark.pos.y);
@@ -127,4 +142,6 @@ class GotoState extends State {
 
 let s = new BaseState();
 window.addEventListener('keydown', e => (s = s.next(e)), false);
+// fixes some bug w/ twitter script maybe? esc not triggered on keydown
+window.addEventListener('keyup', e => { e.key === 'Escape' && (s = s.reset()) });
 
