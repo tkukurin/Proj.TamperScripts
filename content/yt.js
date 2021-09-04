@@ -10,6 +10,8 @@
 // @grant        none
 // ==/UserScript==
 
+console.log("Caption plugin loaded");
+
 (function() {
   function copyUrl(withCaptions) {
     function timeToUrl(timeStr) {

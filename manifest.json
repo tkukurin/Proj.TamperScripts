@@ -1,0 +1,58 @@
+{
+  "name": "TamperScripts",
+  "description": "Various chrome extensions in one.",
+  "version": "1.0",
+  "manifest_version": 3,
+  "permissions": [
+    "tabs",
+    "history",
+    "bookmarks",
+    "storage",
+    "sessions",
+    "downloads",
+    "topSites",
+    "downloads.shelf",
+    "clipboardRead",
+    "clipboardWrite",
+    "webNavigation"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": [
+        "util/include.js",
+        "content/vim.js"
+      ],
+      "run_at": "document_start",
+      "css": ["css/main.css"],
+      "all_frames": true
+    },
+    {
+      "matches": ["https://twitter.com/*"],
+      "js": ["content/twitter.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content/captions.js", "content/yt.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://vimeo.com/*",
+        "https://www.twitch.tv/videos/*",
+        "https://twitter.com/*",
+        "https://slideslive.com/*",
+        "http://videolectures.net/*",
+        "https://complexityexplorer.org/*",
+        "https://drive.google.com/*/view"
+      ],
+      "js": ["content/speed.js"],
+      "css": ["css/speed.css"],
+      "run_at": "document_start"
+    }
+  ],
+
+  "action": {}
+}

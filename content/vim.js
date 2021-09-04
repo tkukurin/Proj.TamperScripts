@@ -1,37 +1,6 @@
 console.log('Vim shortcuts loaded');
 
-// TODO include? This is just c/p from utils.
-NodeList.prototype.forEach = Array.prototype.forEach;
-NodeList.prototype.flatMap = Array.prototype.flatMap;
-NodeList.prototype.filter = Array.prototype.filter;
-NodeList.prototype.map = Array.prototype.map;
-
 const SCROLL_BY = 50;
-
-const Util = {
-  mk: (type, propsOrString) => {
-    const el = document.createElement(type);
-    if (typeof(propsOrString) === 'string') {
-      el.innerHTML = propsOrString;
-    } else {
-      for (let prop in propsOrString) {
-        el[prop] = propsOrString[prop];
-      }
-    }
-    return el;
-  },
-  isInput: el => (
-    ['INPUT', 'TEXTAREA'].indexOf(el.tagName) >= 0 || el.contentEditable === 'true'),
-  isVisible: el => {
-    // + window.getComputedStyle(el).visibility !== 'hidden' maybe?
-    const rect = el.getBoundingClientRect();
-    const W = document.body.offsetWidth;
-    const H = document.body.offsetHeight;
-    const visible = rect.width && rect.height;
-    const inBounds = 0 <= rect.x && rect.x <= W && 0 <= rect.y && rect.y <= H;
-    return visible && inBounds;
-  }
-}
 
 class FollowState {
   constructor() {
@@ -41,11 +10,9 @@ class FollowState {
     const chars = "asdfqwertzxcv";  // or const k = i + 10?
     document.querySelectorAll('a').filter(Util.isVisible).forEach((el, i) => {
       const k = chars[parseInt(i / chars.length)] + chars[i % chars.length];
-      el.append(Util.mk('div', {className: '__vim_follow', innerHTML: k}));
+      el.append(Util.newEl('div', {className: '__vim_follow', innerHTML: k}));
       _me.links[k] = el;
     });
-
-    _me.reset = () => Object.values(_me.links).forEach(e => e.lastChild.remove());
   }
   next(c) {
     this.follow += c;
@@ -56,6 +23,7 @@ class FollowState {
     }
     return this;
   }
+  reset() { Object.values(this.links).forEach(e => e.lastChild.remove()); }
 }
 
 class GState {

@@ -2,8 +2,7 @@
 // @name         CaptionTracker
 // @namespace    tkukurin
 // @version      0.1
-// @description  Track `maxCaptions` captions from given element and
-//               container selectors. Usage: include into TamperMonkey scripts.
+// @description  Track `maxCaptions` captions from given element and container.
 // @author       Toni Kukurin
 // @grant        none
 // ==/UserScript==
@@ -12,13 +11,17 @@ class CaptionTracker {
   constructor(maxCaptions, captionContainerSelector, captionSelector) {
     this.containerSelector = captionContainerSelector;
     this.isActive = false;
+    this.times = new Array(maxCaptions).fill(0);
     this.captions = new Array(maxCaptions).fill('');
-    this.cIndex = 0;
+    // start and end indices of the last captions added
+    this.startIdx = 0;
+    this.endIdx = -1;  // to match update on 1st iteration
     const _me = this;
     this.observer = new MutationObserver(mutations => {
       for (let m of mutations) {
         if (m.target.matches(captionSelector)) {
-          _me.update(m.target.innerText.split('\n'));
+          Q.el('video').then(vid => vid.currentTime)
+            .then(time => _me.update(time, m.target.innerText.split('\n')));
           break;
         }
       }
@@ -26,48 +29,47 @@ class CaptionTracker {
     this.reset(true);
   }
 
-  update(textLines) {
+  update(time, textLines) {
     const heuristicCharCount = 10;
     const wrapIdx = i => (i + this.captions.length) % this.captions.length;
 
-    // Heuristic: assume still the same line if first K characters match
-    // Subtitles are updated in chunks as they are spoken, and textLines can be
-    // anywhere 1-3 lines long. Quickest guessing algo that comes to mind.
-    for (let i = this.cIndex - 3; i <= this.cIndex + 3; i++) {
-      let wrappedI = wrapIdx(i);
-      let part = this.captions[wrappedI];
-      part = part.substr(0, Math.min(part.length, heuristicCharCount));
-      if (part && textLines[0].startsWith(part)) {
-        this.cIndex = wrappedI;
-        break;
-      }
+    for (; this.startIdx != wrapIdx(this.endIdx + 1);
+            this.startIdx = wrapIdx(this.startIdx + 1)) {
+      let part = this.captions[this.startIdx].substr(0, heuristicCharCount);
+      if (textLines[0].startsWith(part)) break;
     }
 
+    this.endIdx = this.startIdx;
     for (let j = 0; j < textLines.length; j++) {
-      this.cIndex = wrapIdx(this.cIndex + j)
-      this.captions[this.cIndex] = textLines[j];
+      this.endIdx = wrapIdx(this.endIdx + j);
+      this.captions[this.endIdx] = textLines[j];
+      this.times[this.endIdx] = time;
     }
 
     return this;
   }
 
-  _resetCaptions() { this.captions.fill(''); this.cIndex = 0; }
+  _resetCaptions() {
+    this.times.fill(0);
+    this.captions.fill('');
+    this.startIdx = this.endIdx = 0;
+  }
 
   reset(isActive) {
     this._resetCaptions();
     this.isActive = isActive;
     if (!this.isActive) {
-      this.observer.disconnect();
+     this.observer.disconnect();
     } else {
       const opts = {childList: true, subtree: true};
-      Q.doc(this.containerSelector).then(el => this.observer.observe(el, opts));
+      Q.el(this.containerSelector).then(el => this.observer.observe(el, opts));
     }
     return this;
   }
 
   get() {
     // Get subtitles in sequence as they appeared.
-    const ci = this.cIndex;
+    const ci = this.endIdx;
     const text1 = this.captions.slice(0, ci + 2).join('\n');
     const text2 = this.captions.slice(ci + 2, this.captions.length).join('\n');
     return `${text2}\n${text1}`.trim();

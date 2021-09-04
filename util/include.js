@@ -46,18 +46,31 @@ Q.doc = (sel) => Q.el(sel, document);
 Q.one = (sel, el=document) => el.querySelector(sel);
 Q.all = (sel, el=document) => el.querySelectorAll(sel);
 
-const Util = {};
-Util.newEl = (type, propsOrString) => {
-  const el = document.createElement(type);
-  if (typeof(propsOrString) === 'string') {
-    el.innerHTML = propsOrString;
-  } else {
-    for (let prop in propsOrString) {
-      el[prop] = propsOrString[prop];
+const Util = {
+  newEl: (type, propsOrString) => {
+    const el = document.createElement(type);
+    if (typeof(propsOrString) === 'string') {
+      el.innerHTML = propsOrString;
+    } else {
+      for (let prop in propsOrString) {
+        el[prop] = propsOrString[prop];
+      }
     }
+    return el;
+  },
+  isInput: el => (
+    ['INPUT', 'TEXTAREA'].indexOf(el.tagName) >= 0 || el.contentEditable === 'true'),
+  isVisible: el => {
+    // + window.getComputedStyle(el).visibility !== 'hidden' maybe?
+    const rect = el.getBoundingClientRect();
+    const W = document.body.offsetWidth;
+    const H = document.body.offsetHeight;
+    const visible = rect.width && rect.height;
+    const inBounds = 0 <= rect.x && rect.x <= W && 0 <= rect.y && rect.y <= H;
+    return visible && inBounds;
   }
-  return el;
 }
+
 
 // cf. https://www.w3schools.com/howto/howto_js_snackbar.asp
 // TODO(tk) could cache elements for speed, but I don't expect to use this a lot
