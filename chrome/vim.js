@@ -7,7 +7,6 @@ NodeList.prototype.filter = Array.prototype.filter;
 NodeList.prototype.map = Array.prototype.map;
 
 const SCROLL_BY = 50;
-const INPUT_TAGS = ['INPUT', 'TEXTAREA'];
 
 // Awful global state wrapper. Works while script is smallish.
 const State = {
@@ -19,15 +18,14 @@ const State = {
   next: function(c) {
     if (this.is('f')) {
       this._val += c;
-      return parseInt(this._val);
+      return this._val;
     } else {
       this._repr = this._repr == c ? null : c;
       return this._repr;
     }
   },
-  reset: function() {
-    Object.values(this._attached).forEach(
-      el => el.children[el.children.length - 1].remove());
+  reset: function(attachedCallback = ([k, v]) => {}) {
+    Object.entries(this._attached).forEach(attachedCallback);
     this._repr = null;
     this._val = '';
     this._attached = {};
@@ -47,9 +45,9 @@ const Util = {
     return el;
   },
   isInput: el => (
-    INPUT_TAGS.indexOf(el.tagName) >= 0 || el.contentEditable === 'true'),
+    ['INPUT', 'TEXTAREA'].indexOf(el.tagName) >= 0 || el.contentEditable === 'true'),
   isVisible: el => {
-    // cf. https://stackoverflow.com/questions/19669786/check-if-element-is-visible-in-dom
+    // + window.getComputedStyle(el).visibility !== 'hidden' maybe?
     const rect = el.getBoundingClientRect();
     const W = document.body.offsetWidth;
     const H = document.body.offsetHeight;
@@ -61,13 +59,13 @@ const Util = {
 
 window.addEventListener('keydown', e => {
   if (Util.isInput(document.activeElement) || e.key === 'Escape') {
-    return State.reset();
+    return State.reset(([_, el]) => el?.lastChild?.remove());
   }
 
   if (State.is('f')) {
     const follow = State.next(e.key);
-    State.attached(follow)?.click();
-    return follow >= 10 && State.reset();
+    return follow.length >= 2 && State.reset(([k, el]) =>
+      (k === follow && el?.click()) || el?.lastChild?.remove());
   }
 
   const pageHeight = document.documentElement.scrollHeight;
@@ -95,7 +93,8 @@ window.addEventListener('keydown', e => {
     // follow
     case 'f':
       document.querySelectorAll('a').filter(Util.isVisible).forEach((el, i) => {
-        const k = i + 10;  // start from double digits (90 labels total).
+        const chars = "asdfqwertzxcv";  // or const k = i + 10?
+        const k = chars[parseInt(i / chars.length)] + chars[i % chars.length];
         el.append(Util.mk('div', {className: '__vim_follow', innerHTML: k}));
         State.attach(k, el);
       });
