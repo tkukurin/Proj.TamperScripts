@@ -1,0 +1,17 @@
+#header-img,
+#redesign-beta-optin-btn,
+.footer-parent,
+a.thumbnail,
+div.midcol.unvoted,
+.entry .flat-list.buttons,
+span.rank {
+  display: none !important;
+}
+div.trending-subreddits {
+  visibility: hidden; height: 0px;
+}
+div.content {
+  max-width: 600px;
+  margin: 20px auto !important;
+}
+.searchpane { margin: 0 !important; }

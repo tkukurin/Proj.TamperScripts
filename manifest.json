@@ -51,6 +51,12 @@
       "js": ["content/speed.js"],
       "css": ["css/speed.css"],
       "run_at": "document_start"
+    },
+    {
+      "matches": [ "https://www.reddit.com/*" ],
+      "js": ["content/reddit.js"],
+      "css": ["css/reddit.css"],
+      "run_at": "document_start"
     }
   ],
 
