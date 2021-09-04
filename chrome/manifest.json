@@ -20,6 +20,7 @@
     "matches": ["<all_urls>"],
     "js": ["vim.js"],
     "run_at": "document_start",
+    "css": ["main.css"],
     "all_frames": true
   }],
 
