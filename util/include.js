@@ -91,25 +91,21 @@ border-radius:2px;padding:16px;animation: _aI .5s, _aO 1s 2s}
 }
 
 Util.sidebar = content => {
-  const side = Util.newEl('div', {className: '_side'});
+  const side = Util.newEl('div', {className: '__util_side'});
   side.appendChild(content);
-
-  const style = Util.newEl('style', `body{transition:margin-left .5s}
-._side{height:100%;width:0;position:fixed;z-index:998;top:0;left:0;border-right:1px solid #ddd;overflow-x:hidden;padding-top:60px;transition:.5s}
-._sbtn{z-index:999;position:fixed;left:20px;top:20px;font-size:20px;}`);
 
   let _open = false;
   function _stoggle() {
     let width = _open ? 0 : '250px';
     let inner = _open ? '&larr;' : '&times;';
-    Q.el('._sbtn').then(el => el.innerHTML = inner);
-    Q.el('._side').then(el => el.style.width = width);
+    Q.el('.__util_sbtn').then(el => el.innerHTML = inner);
+    Q.el('.__util_side').then(el => el.style.width = width);
     document.body.style.marginLeft = width;
     _open = !_open;
   }
 
   document.body.prepend(Util.newEl('button',
-    {className:'_sbtn', onclick: _stoggle, innerHTML: '&larr;'}));
+    {className:'__util_sbtn', onclick: _stoggle, innerHTML: '&larr;'}));
   document.head.appendChild(style);
   document.body.prepend(side);
 

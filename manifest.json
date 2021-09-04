@@ -23,8 +23,11 @@
         "util/include.js",
         "content/vim.js"
       ],
+      "css": [
+        "css/util.css",
+        "css/vim.css"
+      ],
       "run_at": "document_start",
-      "css": ["css/main.css"],
       "all_frames": true
     },
     {
