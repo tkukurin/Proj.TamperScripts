@@ -13,13 +13,17 @@ NodeList.prototype.forEach = Array.prototype.forEach;
 NodeList.prototype.flatMap = Array.prototype.flatMap;
 NodeList.prototype.filter = Array.prototype.filter;
 NodeList.prototype.map = Array.prototype.map;
+NodeList.prototype.concat = function(other) {
+  if (other instanceof NodeList) {
+    other = Object.values(other);
+  }
+  return Object.values(this).concat(other);
+}
 
 HTMLCollection.prototype.forEach = Array.prototype.forEach;
 HTMLCollection.prototype.flatMap = Array.prototype.flatMap;
 HTMLCollection.prototype.filter = Array.prototype.filter;
 HTMLCollection.prototype.map = Array.prototype.map;
-
-const L = console.log;
 
 // Function wrappers
 const F = {};
@@ -75,18 +79,9 @@ const Util = {
 // cf. https://www.w3schools.com/howto/howto_js_snackbar.asp
 // TODO(tk) could cache elements for speed, but I don't expect to use this a lot
 Util.toast = text => {
-  const toast = Util.newEl('div', {className: '_tst', innerHTML: text});
-  const style = Util.newEl('style', `._tst{z-index:1;left:50%;bottom:30px;position:fixed;
-min-width:250px;margin-left:-125px;background:#333;color:#fff;text-align:center;
-border-radius:2px;padding:16px;animation: _aI .5s, _aO 1s 2s}
-@keyframes _aI {from {bottom:0;opacity:0} to {bottom:30px;opacity:1}}
-@keyframes _aO {from {bottom:30px;opacity:1} to {bottom:0;opacity:0}}`);
-
-  document.head.appendChild(style);
+  const toast = Util.newEl('div', {className: '__util_toast', innerHTML: text});
   document.body.prepend(toast);
-
   setTimeout(() => toast.remove() || style.remove(), 3000);
-
   return toast;
 }
 

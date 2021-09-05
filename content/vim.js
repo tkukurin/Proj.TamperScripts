@@ -1,7 +1,7 @@
 console.log('Vim shortcuts loaded');
 
 const Settings = {
-  preventBubble: true,
+  preventBubble: false, // prevent event bubbling if shortcuts clash
   scrollBy: 50,
 }
 
@@ -22,11 +22,6 @@ class State {
 
     if (Util.isInput(document.activeElement) || e.key === 'Escape') {
       return this.reset();
-    }
-
-    if (Settings.preventBubble) {
-      e.preventDefault();
-      e.stopPropagation();
     }
 
     return this._next(e.key);
@@ -71,6 +66,7 @@ class BaseState extends State {
       case 'L': window.history.forward(); break;
 
       case 'f': return new FollowState();
+      case 'F': return new FollowState('tab');
       case 'm': return new MarkState();
     }
     return this;
@@ -79,30 +75,34 @@ class BaseState extends State {
 }
 
 class FollowState extends State {
-  constructor() {
+  constructor(target='') {
     super();
-    const _me = this;
-    _me.links = {};
-    _me.follow = '';
-    // TODO
-    //const clickables = (document.querySelectorAll('a').concat(
-    // document.querySelectorAll('button'));
-    const chars = 'asdfqwertzxcv';  // or const k = i + 10?
-    document.querySelectorAll('a').filter(Util.isVisible).forEach((el, i) => {
+    this.openOpts = (target==='tab') ? {ctrlKey: true} : {};
+    this.follow = '';
+    const clickables =
+      document.querySelectorAll('a').concat(document.querySelectorAll('button'));
+    const chars = 'asdfqwertzxcvplmokijn';
+    if (clickables.length > chars.length * chars.length) {
+      throw `TODO: This would produce duplicates (${clickables.length} links)`;
+    }
+    this.links = clickables.filter(Util.isVisible).map((el, i) => {
       const k = chars[parseInt(i / chars.length)] + chars[i % chars.length];
       el.append(Util.newEl('div', {className: '__vim_follow', innerHTML: k}));
-      _me.links[k] = el;  // kinda implicitly assume < chars^2 links on screen
+      return {hint:k, el: el};
     });
   }
   _next(c) {
     this.follow += c;
-    if (this.follow.length >= 2) {
-      this.links[this.follow]?.click();
+    this.links = this.links
+      .filter(v => v.hint.startsWith(this.follow) || v.el.lastChild.remove());
+    let found = this.links.find(({hint, el}) => hint == this.follow);
+    if (found || !this.links) {
+      found?.el.dispatchEvent(new MouseEvent("click", this.openOpts));
       return this.reset();
     }
     return this;
   }
-  _reset() { Object.values(this.links).forEach(e => e.lastChild.remove()); }
+  _reset() { this.links.forEach(({_, el}) => el.lastChild.remove()); }
 }
 
 class Mark {
@@ -121,6 +121,7 @@ class MarkState extends State {
   }
   _next(c) {
     switch(c) {
+      // ugly sync with GotoState
       case 'g': console.error('Mark g taken'); break;
       default: MarkState.Marks.set(c);
     }
@@ -141,7 +142,22 @@ class GotoState extends State {
 }
 
 let s = new BaseState();
-window.addEventListener('keydown', e => (s = s.next(e)), false);
-// fixes some bug w/ twitter script maybe? esc not triggered on keydown
-window.addEventListener('keyup', e => { e.key === 'Escape' && (s = s.reset()) });
+document.addEventListener('keydown', e => {
+  try {
+    s = s.next(e);
+  } catch(e) {
+    console.error("[VIM] ", e);
+    s = new NullState();
+  }
+
+  if (Settings.preventBubble) {
+    e.cancelBubble = true;
+    e.preventDefault();
+    e.stopPropagation();
+  }
+}, true);
+document.addEventListener('keyup', e => {
+  // fixes some bug w/ twitter script maybe? esc not triggered on keydown
+  e.key === 'Escape' && (s = s.reset());
+});
 
