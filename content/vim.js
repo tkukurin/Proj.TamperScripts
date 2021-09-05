@@ -1,9 +1,13 @@
-console.log('Vim shortcuts loaded');
 
+// TODO pretty sure this can be managed from Chrome somehow
+// Similar with the shortcuts themselves.
 const Settings = {
   preventBubble: true, // prevent event bubbling if shortcuts clash
   scrollBy: 50,
 }
+
+console.log('Vim shortcuts loaded');
+console.log(Settings);
 
 class State {
   next(e) {
@@ -15,24 +19,26 @@ class State {
           console.log(Settings);
       }
     }
-
-    if (e.metaKey || e.altKey || e.ctrlKey) {
-      return this;
+    const focused = document.activeElement;
+    if (e.metaKey || e.altKey || e.ctrlKey) return this;
+    if (Util.isInput(focused) || e.key === 'Escape') return this.reset();
+    if (Settings.preventBubble && !e.ctrlKey) {  // ctrl = chrome shortcuts
+      e.cancelBubble = true;
+      e.preventDefault();
+      e.stopPropagation();
     }
-
-    if (Util.isInput(document.activeElement) || e.key === 'Escape') {
-      return this.reset();
-    }
-
-    return this._next(e.key);
+    return this.nextHook(e.key);
   }
-  _next() {}
-  reset() { this._reset(); return new BaseState(); }
-  _reset() {}
+  reset() { this.resetHook(); return new BaseState(); }
+  nextHook() { return this; }
+  resetHook() { return this; }
 }
 
 class NullState extends State {
-  constructor() { super(); console.log("[VIM DBG] Disabling"); }
+  constructor() {
+    super();
+    console.log("[VIM DBG] Disabling");
+  }
   next(e) {
     if (e.altKey && e.key == 'q') {
       console.log("[VIM DBG] Enabling");
@@ -43,7 +49,7 @@ class NullState extends State {
 }
 
 class BaseState extends State {
-  _next(c) {
+  nextHook(c) {
     switch (c) {
       // up
       case 'k': case 'w': window.scrollBy(0, -Settings.scrollBy); break;
@@ -65,7 +71,7 @@ class BaseState extends State {
       case 'H': window.history.back(); break;
       case 'L': window.history.forward(); break;
 
-      case 'f': return new FollowState();
+      case 'f': return new FollowState('cur');
       case 'F': return new FollowState('tab');
       case 'm': return new MarkState();
     }
@@ -75,34 +81,40 @@ class BaseState extends State {
 }
 
 class FollowState extends State {
-  constructor(target='') {
-    super();
-    this.openOpts = (target==='tab') ? {ctrlKey: true} : {};
-    this.follow = '';
+  static #getVisibleWithHints(cs) {
     const clickables =
       document.querySelectorAll('a').concat(document.querySelectorAll('button'));
-    const chars = 'asdfqwertzxcvplmokijn';
-    if (clickables.length > chars.length * chars.length) {
-      throw `TODO: This would produce duplicates (${clickables.length} links)`;
+    if (clickables.length > Math.pow(cs.length, 2)) {
+      throw `TODO: would produce duplicates (${clickables.length} links)`;
     }
-    this.links = clickables.filter(Util.isVisible).map((el, i) => {
-      const k = chars[parseInt(i / chars.length)] + chars[i % chars.length];
-      el.append(Util.newEl('div', {className: '__vim_follow', innerHTML: k}));
-      return {hint:k, el: el};
+    return clickables.filter(Util.isVisible).map((el, i) => {
+      const hint = cs[parseInt(i / cs.length)] + cs[i % cs.length];
+      el.append(Util.newEl('div', {className: '__vim_follow', innerHTML: hint}));
+      return {hint, el};
     });
   }
-  _next(c) {
-    this.follow += c;
+
+  constructor(target='cur') {
+    super();
+    this.clickEvent = new MouseEvent(
+      'click', (target == 'tab' && {ctrlKey:true}) || {});
+    this.links = FollowState.#getVisibleWithHints('asdfqwertzxcvplmokijn');
+    this.accum = '';
+  }
+
+  nextHook(c) {
+    this.accum += c;
     this.links = this.links
-      .filter(v => v.hint.startsWith(this.follow) || v.el.lastChild.remove());
-    let found = this.links.find(({hint, el}) => hint == this.follow);
+      .filter(v => v.hint.startsWith(this.accum) || v.el.lastChild.remove());
+    let found = this.links.find(({hint, _}) => hint == this.accum);
     if (found || !this.links) {
-      found?.el.dispatchEvent(new MouseEvent("click", this.openOpts));
+      found?.el.dispatchEvent(this.clickEvent);
       return this.reset();
     }
     return this;
   }
-  _reset() { this.links.forEach(({_, el}) => el.lastChild.remove()); }
+
+  resetHook() { this.links.forEach(({_, el}) => el.lastChild.remove()); }
 }
 
 class Mark {
@@ -119,7 +131,7 @@ class MarkState extends State {
     set: function(c) { this._marks[c] = new Mark(c); },
     get: function(c) { return this._marks[c]; }
   }
-  _next(c) {
+  nextHook(c) {
     switch(c) {
       // ugly sync with GotoState
       case 'g': console.error('Mark g taken'); break;
@@ -130,7 +142,7 @@ class MarkState extends State {
 }
 
 class GotoState extends State {
-  _next(c) {
+  nextHook(c) {
     switch(c) {
       case 'g': window.scrollTo(0, 0); break;
       default:
@@ -148,13 +160,6 @@ document.addEventListener('keydown', e => {
   } catch(e) {
     console.error("[VIM] ", e);
     s = new NullState();
-  }
-
-  const isChromeShortcut = e.ctrlKey;  // is there a better way? idk.
-  if (Settings.preventBubble && !isChromeShortcut) {
-    e.cancelBubble = true;
-    e.preventDefault();
-    e.stopPropagation();
   }
 }, true);
 document.addEventListener('keyup', e => {
