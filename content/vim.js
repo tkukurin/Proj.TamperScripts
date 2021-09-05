@@ -20,7 +20,7 @@ class State {
       }
     }
     const focused = document.activeElement;
-    if (e.metaKey || e.altKey || e.ctrlKey) return this;
+    if (this.shortCircuit(e)) return this;
     if (Util.isInput(focused) || e.key === 'Escape') return this.reset();
     if (Settings.preventBubble && !e.ctrlKey) {  // ctrl = chrome shortcuts
       e.cancelBubble = true;
@@ -28,6 +28,11 @@ class State {
       e.stopPropagation();
     }
     return this.nextHook(e.key);
+  }
+  shortCircuit(e) { // don't trigger any logic on this keypress
+    return (
+      e.metaKey || e.altKey || e.ctrlKey
+      || e.code == 'Space' || e.code.startsWith('Arrow'));
   }
   reset() { this.resetHook(); return new BaseState(); }
   nextHook() { return this; }
