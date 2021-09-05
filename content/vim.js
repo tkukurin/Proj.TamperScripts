@@ -67,12 +67,13 @@ class BaseState extends State {
       case 'G': window.scrollBy(0, document.documentElement.scrollHeight); break;
       case 'g': return new GotoState();
 
-      // history (return, no State change / fallthrough)
+      // history
       case 'H': window.history.back(); break;
       case 'L': window.history.forward(); break;
 
-      case 'f': return new FollowState('cur');
-      case 'F': return new FollowState('tab');
+      case FollowState.OPEN_CUR: case FollowState.OPEN_TAB:
+        const follow = new FollowState(c);
+        return follow.links.length ? follow : this;
       case 'm': return new MarkState();
     }
     return this;
@@ -81,24 +82,25 @@ class BaseState extends State {
 }
 
 class FollowState extends State {
-  static #getVisibleWithHints(cs) {
+  static OPEN_TAB = 'F';
+  static OPEN_CUR = 'f';
+  static #visibleElemsWithHints(chars) {
     const clickables =
       document.querySelectorAll('a').concat(document.querySelectorAll('button'));
-    if (clickables.length > Math.pow(cs.length, 2)) {
+    if (clickables.length > Math.pow(chars.length, 2)) {
       throw `TODO: would produce duplicates (${clickables.length} links)`;
     }
     return clickables.filter(Util.isVisible).map((el, i) => {
-      const hint = cs[parseInt(i / cs.length)] + cs[i % cs.length];
+      const hint = chars[parseInt(i / chars.length)] + chars[i % chars.length];
       el.append(Util.newEl('div', {className: '__vim_follow', innerHTML: hint}));
       return {hint, el};
     });
   }
 
-  constructor(target='cur') {
+  constructor(open=FollowState.OPEN_CUR) {
     super();
-    this.clickEvent = new MouseEvent(
-      'click', (target == 'tab' && {ctrlKey:true}) || {});
-    this.links = FollowState.#getVisibleWithHints('asdfqwertzxcvplmokijn');
+    this.evt = new MouseEvent('click', {ctrlKey: open == FollowState.OPEN_TAB});
+    this.links = FollowState.#visibleElemsWithHints('asdfqwertzxcvplmokijn');
     this.accum = '';
   }
 
@@ -108,7 +110,7 @@ class FollowState extends State {
       .filter(v => v.hint.startsWith(this.accum) || v.el.lastChild.remove());
     let found = this.links.find(({hint, _}) => hint == this.accum);
     if (found || !this.links) {
-      found?.el.dispatchEvent(this.clickEvent);
+      found?.el.dispatchEvent(this.evt);
       return this.reset();
     }
     return this;

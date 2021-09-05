@@ -66,9 +66,10 @@ const Util = {
     ['INPUT', 'TEXTAREA'].indexOf(el.tagName) >= 0 || el.contentEditable === 'true'),
   isVisible: el => {
     // + window.getComputedStyle(el).visibility !== 'hidden' maybe?
+    // This getBoundingClientRect thing doesn't seem corect for all cases.
     const rect = el.getBoundingClientRect();
-    const W = document.body.offsetWidth;
-    const H = document.body.offsetHeight;
+    const W = window.innerWidth || document.documentElement.clientWidth;
+    const H = window.innerHeight || document.documentElement.clientHeight;
     const visible = rect.width && rect.height;
     const inBounds = 0 <= rect.x && rect.x <= W && 0 <= rect.y && rect.y <= H;
     return visible && inBounds;
