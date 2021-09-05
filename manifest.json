@@ -58,8 +58,7 @@
     {
       "matches": [ "https://www.reddit.com/*" ],
       "js": ["content/reddit.js"],
-      "css": ["css/reddit.css"],
-      "run_at": "document_start"
+      "run_at": "document_idle"
     }
   ],
 
