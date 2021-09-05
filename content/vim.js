@@ -1,7 +1,7 @@
 console.log('Vim shortcuts loaded');
 
 const Settings = {
-  preventBubble: false, // prevent event bubbling if shortcuts clash
+  preventBubble: true, // prevent event bubbling if shortcuts clash
   scrollBy: 50,
 }
 
@@ -150,7 +150,8 @@ document.addEventListener('keydown', e => {
     s = new NullState();
   }
 
-  if (Settings.preventBubble) {
+  const isChromeShortcut = e.ctrlKey;  // is there a better way? idk.
+  if (Settings.preventBubble && !isChromeShortcut) {
     e.cancelBubble = true;
     e.preventDefault();
     e.stopPropagation();
