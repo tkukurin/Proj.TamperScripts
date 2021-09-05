@@ -118,23 +118,22 @@ class FollowState extends State {
 }
 
 class Mark {
-  constructor(c) {
-    this.pos = {x: window.pageXOffset, y: window.pageYOffset};
-    this.sel = window.getSelection()?.anchorNode;
+  constructor(pos, sel) {
+    this.pos = pos || {x: window.pageXOffset, y: window.pageYOffset};
+    this.sel = sel || window.getSelection()?.anchorNode;
     this.txt = this.sel?.data;
   }
 }
 
 class MarkState extends State {
   static Marks = {
-    _marks: {},  // global state :(
-    set: function(c) { this._marks[c] = new Mark(c); },
+    _marks: {'g': new Mark({x:0, y:0}, null) },  // global state :(
+    set: function(c) { this._marks[c] = new Mark(); },
     get: function(c) { return this._marks[c]; }
   }
   nextHook(c) {
     switch(c) {
-      // ugly sync with GotoState
-      case 'g': console.error('Mark g taken'); break;
+      case 'g': console.error('Mark g taken'); break; // gg to go (0, 0)
       default: MarkState.Marks.set(c);
     }
     return this.reset();
@@ -143,12 +142,8 @@ class MarkState extends State {
 
 class GotoState extends State {
   nextHook(c) {
-    switch(c) {
-      case 'g': window.scrollTo(0, 0); break;
-      default:
-        const mark = MarkState.Marks.get(c);
-        window.scrollTo(mark.pos.x, mark.pos.y);
-    }
+    const mark = MarkState.Marks.get(c);
+    window.scrollTo(mark.pos.x, mark.pos.y);
     return this.reset();
   }
 }
