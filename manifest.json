@@ -2,7 +2,7 @@
   "name": "TamperScripts",
   "description": "Various chrome extensions in one.",
   "version": "1.0",
-  "manifest_version": 3,
+  "manifest_version": 2,
   "permissions": [
     "tabs",
     "history",
@@ -16,6 +16,13 @@
     "clipboardWrite",
     "webNavigation"
   ],
+  "background": {
+    "persistant": false,
+    "scripts": [
+      "background.js",
+      "util/include.js"
+    ]
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],

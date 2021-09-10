@@ -114,6 +114,8 @@ Util.observe = (f, el=document.body, opts={childList:true, subtree:true}) => {
   return observer;
 }
 
+Util.mod = (x, len) => (x + len) % len;
+
 const Shortcut = {
   sel: (k, sel, ...mods) => ({k:k, sel:sel, mods:mods}),
   fun: (k, fn, ...mods) => ({k:k, fn:fn, mods:mods}),

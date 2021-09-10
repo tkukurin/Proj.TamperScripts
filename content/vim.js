@@ -11,16 +11,10 @@ console.log(Settings);
 
 class State {
   next(e) {
-    if (e.altKey) {
-      switch (e.key) {
-        case 'q': return new NullState();
-        case 'p':
-          Settings.preventBubble = !Settings.preventBubble;
-          console.log(Settings);
-      }
-    }
+    const end = this.shortCircuit(e);
+    if (end) return end;
+
     const focused = document.activeElement;
-    if (this.shortCircuit(e)) return this;
     if (Util.isInput(focused) || e.key === 'Escape') return this.reset();
     if (Settings.preventBubble && !e.ctrlKey) {  // ctrl = chrome shortcuts
       e.cancelBubble = true;
@@ -29,12 +23,31 @@ class State {
     }
     return this.nextHook(e.key);
   }
-  shortCircuit(e) { // don't trigger any logic on this keypress
-    return (
-      e.metaKey || e.altKey || e.ctrlKey
-      || e.code == 'Space' || e.code.startsWith('Arrow'));
+
+  shortCircuit(e) {  // stops current vim state from executing
+    if (e.altKey) {
+      switch (e.key) {
+        case 'q':
+          return new NullState();
+        case 'p':
+          Settings.preventBubble = !Settings.preventBubble;
+          console.log(Settings);
+          break;
+        case 'j': case 'k':
+          chrome.runtime.sendMessage({cmd: 'tab', key: e.key});
+      }
+    }
+    const endEarly = (e.altKey || e.metaKey || e.ctrlKey || e.code == 'Space'
+      || e.code.startsWith('Arrow'));
+    return endEarly ? this : null;
+
   }
-  reset() { this.resetHook(); return new BaseState(); }
+
+  reset() {
+    this.resetHook();
+    return new BaseState(Settings.scrollBy);
+  }
+
   nextHook() { return this; }
   resetHook() { return this; }
 }
@@ -54,19 +67,21 @@ class NullState extends State {
 }
 
 class BaseState extends State {
+  constructor(scrollBy) { super(); this.scrollBy = scrollBy; }
+  reset() { return this; }
   nextHook(c) {
     switch (c) {
       // up
-      case 'k': case 'w': window.scrollBy(0, -Settings.scrollBy); break;
-      case 'u': window.scrollBy(0, -Settings.scrollBy * 2); break;
+      case 'k': case 'w': window.scrollBy(0, -this.scrollBy); break;
+      case 'u': window.scrollBy(0, -this.scrollBy * 2); break;
 
       // down
-      case 'j': case 's': window.scrollBy(0, Settings.scrollBy); break;
-      case 'd': window.scrollBy(0, Settings.scrollBy * 2); break;
+      case 'j': case 's': window.scrollBy(0, this.scrollBy); break;
+      case 'd': window.scrollBy(0, this.scrollBy * 2); break;
 
       // left / right
-      case 'l': window.scrollBy(Settings.scrollBy, 0); break;
-      case 'h': window.scrollBy(-Settings.scrollBy, 0); break;
+      case 'l': window.scrollBy(this.scrollBy, 0); break;
+      case 'h': window.scrollBy(-this.scrollBy, 0); break;
 
       // full
       case 'G': window.scrollBy(0, document.documentElement.scrollHeight); break;
@@ -83,19 +98,19 @@ class BaseState extends State {
     }
     return this;
   }
-  reset() { return this; }
 }
 
 class FollowState extends State {
   static OPEN_TAB = 'F';
   static OPEN_CUR = 'f';
   static #visibleElemsWithHints(chars) {
-    const clickables =
-      document.querySelectorAll('a').concat(document.querySelectorAll('button'));
-    if (clickables.length > Math.pow(chars.length, 2)) {
-      throw `TODO: would produce duplicates (${clickables.length} links)`;
+    const clickables = document.querySelectorAll('a').concat(
+      document.querySelectorAll('button')).filter(Util.isVisible);
+    const maxlen = Math.pow(chars.length, 2)
+    if (clickables.length > maxlen) {
+      console.warn(`Found ${clickables.length} links (> ${maxlen})`);
     }
-    return clickables.filter(Util.isVisible).map((el, i) => {
+    return clickables.slice(0, maxlen).map((el, i) => {
       const hint = chars[parseInt(i / chars.length)] + chars[i % chars.length];
       el.append(Util.newEl('div', {className: '__vim_follow', innerHTML: hint}));
       return {hint, el};
@@ -111,8 +126,8 @@ class FollowState extends State {
 
   nextHook(c) {
     this.accum += c;
-    this.links = this.links
-      .filter(v => v.hint.startsWith(this.accum) || v.el.lastChild.remove());
+    this.links = this.links.filter(({hint, el}) =>
+      hint.startsWith(this.accum) || el.lastChild.remove());
     let found = this.links.find(({hint, _}) => hint == this.accum);
     if (found || !this.links) {
       found?.el.dispatchEvent(this.evt);
@@ -138,6 +153,7 @@ class MarkState extends State {
     set: function(c) { this._marks[c] = new Mark(); },
     get: function(c) { return this._marks[c]; }
   }
+
   nextHook(c) {
     switch(c) {
       case 'g': console.error('Mark g taken'); break; // gg to go (0, 0)
@@ -155,12 +171,12 @@ class GotoState extends State {
   }
 }
 
-let s = new BaseState();
+let s = new State().reset()
 document.addEventListener('keydown', e => {
   try {
     s = s.next(e);
   } catch(e) {
-    console.error("[VIM] ", e);
+    console.error(e);
     s = new NullState();
   }
 }, true);
