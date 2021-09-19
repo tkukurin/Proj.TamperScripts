@@ -6,10 +6,8 @@ const Settings = {
   scrollBy: 50,
 }
 
-console.log('Vim shortcuts loaded');
-console.log(Settings);
-
 class State {
+  constructor() { this.storage = localStorage; }
   next(e) {
     const end = this.shortCircuit(e);
     if (end) return end;
@@ -28,6 +26,7 @@ class State {
     if (e.altKey) {
       switch (e.key) {
         case 'q':
+          this.storage.setItem(window.location.host, 0);
           return new NullState();
         case 'p':
           Settings.preventBubble = !Settings.preventBubble;
@@ -60,6 +59,7 @@ class NullState extends State {
   next(e) {
     if (e.altKey && e.key == 'q') {
       console.log("[VIM DBG] Enabling");
+      this.storage.setItem(window.location.host, 1);
       return this.reset();
     }
     return this;
@@ -171,7 +171,10 @@ class GotoState extends State {
   }
 }
 
-let s = new State().reset()
+const storedNull = localStorage.getItem(window.location.host) == 0
+let s = storedNull ? new NullState() : new State().reset();
+console.log('Vim shortcuts loaded: ', storedNull, s);
+console.log(Settings);
 document.addEventListener('keydown', e => {
   try {
     s = s.next(e);
