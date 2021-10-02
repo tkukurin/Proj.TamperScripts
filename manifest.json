@@ -39,12 +39,19 @@
     },
     {
       "matches": ["https://twitter.com/*"],
-      "js": ["content/twitter.js"],
+      "js": [
+        "util/include.js",
+        "content/twitter.js"
+      ],
       "run_at": "document_start"
     },
     {
       "matches": ["https://www.youtube.com/*"],
-      "js": ["content/captions.js", "content/yt.js"],
+      "js": [
+        "util/include.js",
+        "content/captions.js",
+        "content/yt.js"
+      ],
       "run_at": "document_start"
     },
     {
@@ -67,7 +74,5 @@
       "js": ["content/reddit.js"],
       "run_at": "document_idle"
     }
-  ],
-
-  "action": {}
+  ]
 }
