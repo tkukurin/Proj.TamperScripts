@@ -82,7 +82,7 @@ const Util = {
 Util.toast = text => {
   const toast = Util.newEl('div', {className: '__util_toast', innerHTML: text});
   document.body.prepend(toast);
-  setTimeout(() => toast.remove() || style.remove(), 3000);
+  setTimeout(() => toast.remove(), 3000);
   return toast;
 }
 
@@ -102,7 +102,6 @@ Util.sidebar = content => {
 
   document.body.prepend(Util.newEl('button',
     {className:'__util_sbtn', onclick: _stoggle, innerHTML: '&larr;'}));
-  document.head.appendChild(style);
   document.body.prepend(side);
 
   return side;
