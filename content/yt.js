@@ -44,7 +44,8 @@ console.log("Caption plugin loaded");
   function subtitleTrackToggle() {
     if (!window.captionTracker) {
       window.captionTracker = new CaptionTracker(
-        100, '#player-container', '.captions-text');
+        100, '.ytp-caption-window-container', '.captions-text');
+
       ensureSubtitles().then(_ => Util.toast('Captions on'));
 
       // So long as you are staying in the same yt session,
