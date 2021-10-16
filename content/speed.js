@@ -291,10 +291,6 @@ function initializeNow(document) {
 
   if (document === window.document) {
     defineVideoController();
-  } else {
-    var style = document.createElement("style");
-    style.innerHTML = injectCss;
-    document.head.appendChild(style);
   }
 
   var docs = Array(document);
