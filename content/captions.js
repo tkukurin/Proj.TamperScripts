@@ -7,6 +7,9 @@
 // @grant        none
 // ==/UserScript==
 
+
+// @deprecated: YT allows you to view *all* captions from the bar under video.
+// Thus I don't think this stuff is really necessary.
 class CaptionTracker {
   constructor(maxCaptions, captionContainerSelector, captionSelector) {
     this.containerSelector = captionContainerSelector;

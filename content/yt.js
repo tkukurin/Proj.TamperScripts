@@ -16,58 +16,83 @@ console.log("Caption plugin loaded");
   function copyUrl(withCaptions) {
     function timeToUrl(timeStr) {
       const id = /\?v\=([^&]+)/g.exec(window.location.search);
-      const url = (id && `https://youtu.be/${id[1]}?t=${timeStr}`) ||
+      return (id && `https://youtu.be/${id[1]}?t=${timeStr}`) ||
         window.location.href.replace(/&t\=[^&]+/, `&t=${timeStr}`);
-      return {t: timeStr, url: url};
     }
-    const tracker = window.captionTracker;
-    const maybeCaptions = withCaptions && tracker ? tracker.get() : '';
     // NOTE(tk) `?t=vid.currentTime` also works but h/m/s is semantically nicer
-    Q.doc('video')
-      .then(vid => vid.currentTime)
-      .then(time => [time/3600, (time/60)%60, (time%60)])
-      .then(ts => ts.map(n => parseInt(n)))
-      .then(ts => ts.map((n, i) => n ? `${n}${'hms'[i]}` : ''))
-      .then(tsWithTime => tsWithTime.join(''))
-      .then(timeToUrl)
-      .then(({t, url}) => `[@${t}](${url})\n${maybeCaptions}`.trim())
-      .then(copyText => navigator.clipboard.writeText(copyText))
-      .then(_ => Util.toast(
-        `Copied time ${maybeCaptions ? 'with' : 'without'} captions`));
+    const vid = document.querySelector('video');
+    const subs = window.tamperSubs;
+    const t = vid.currentTime;
+    // TODO copy things *around* current captions
+    const maybeCaptions = (withCaptions && subs && subs.get(t).content) || '';
+    const timeStr = [t/3600, (t/60)%60, (t%60)].map(n => parseInt(n)).map(
+      (n, i) => n ? `${n}${'hms'[i]}` : '').join('');
+    const url = timeToUrl(timeStr);
+    const cpText = `[@${timeStr}](${url})\n${maybeCaptions}`.trim();
+    navigator.clipboard.writeText(cpText);
+    Util.toast(`Copied time ${maybeCaptions ? 'with' : 'without'} captions`);
   }
 
-  function ensureSubtitles() {
-    return Q.el('.ytp-subtitles-button')
-      .then(el => el.ariaPressed === 'true' || el.click())
-  }
+  class Subtitles {
+    constructor(subtitleDivs) {
+      const subtitles = [];
+      for (let subtitleDiv of subtitleDivs) {
+        let innerDivs = subtitleDiv.querySelectorAll('div');
+        if (!innerDivs || innerDivs.length < 3) continue;
+        let timeStr = innerDivs[0].innerText.trim();
+        let tstamp = timeStr.split(':').map(n => parseInt(n)).reverse()
+          .map((n, i) => (n * Math.pow(60, i)))
+          .reduce((a, b) => a + b);
+        let content = innerDivs[2].innerText.trim();
+        subtitles.push({timeStr, tstamp, content});
+      }
 
-  function subtitleTrackToggle() {
-    if (!window.captionTracker) {
-      window.captionTracker = new CaptionTracker(
-        100, '.ytp-caption-window-container', '.captions-text');
-
-      ensureSubtitles().then(_ => Util.toast('Captions on'));
-
-      // So long as you are staying in the same yt session,
-      // keep tracking subtitles but reset them when switching videos.
-      let curHref = document.location.href;
-      window.hrefObserver = new MutationObserver((_, self) => {
-        if (curHref != document.location.href) {
-          window.captionTracker.reset(true);
-          curHref = document.location.href;
-        }
-      });
-      window.hrefObserver.observe(document.body, {childList:true, subtree:true});
-    } else {
-      window.hrefObserver.disconnect();
-      // necessary to deactivate observer
-      window.captionTracker.reset(false);
-
-      window.captionTracker = null;
-      window.hrefObserver = null;
-
-      Util.toast('Captions off');
+      this.subtitles = subtitles;
     }
+
+    get(key) {
+      return this.subtitles[this.getIndex(key)];
+    }
+
+    getIndex(key) {
+      let start = 0;
+      let end = this.subtitles.length;
+      while (start < end) {
+        let mid = Math.ceil((start + end) / 2);
+        if (this.subtitles[mid].tstamp > key) end = mid - 1;
+        else start = mid;
+      }
+      return start;
+    }
+  }
+
+  async function subtitleTrackToggle() {
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    let subtitleWrap = document.querySelector(
+      '#body > ytd-transcript-body-renderer');
+
+    if (!subtitleWrap) {
+      document.querySelector('#button > yt-icon.ytd-menu-renderer').click();
+      await sleep(250);
+      const clickToShowSubs = document.querySelector(
+        `#items > ytd-menu-service-item-renderer:nth-child(2) >
+         tp-yt-paper-item > yt-formatted-string`);
+      if (!clickToShowSubs) return Util.toast('No subs!');
+      clickToShowSubs.click();
+    }
+
+    for (let i = 0; i < 7; i++) {
+      await sleep(100);
+      subtitleWrap = document.querySelector(
+        '#body > ytd-transcript-body-renderer');
+      if (subtitleWrap && (divs = subtitleWrap.querySelectorAll('div'))) {
+        const subtitles = new Subtitles(divs);
+        window.tamperSubs = subtitles;
+        return Util.toast('Captions on');
+      }
+    }
+
+    Util.toast('Failed getting captions');
   }
 
   window.onkeyup = document.onkeyup = Shortcut.init({
