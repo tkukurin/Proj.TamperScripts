@@ -73,14 +73,26 @@ console.log("Caption plugin loaded");
     }
   }
 
-  async function subtitleTrackToggle() {
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-    let subtitleWrap = document.querySelector(
-      '#body > ytd-transcript-body-renderer');
+  class Retry {
+    #sleepMs = 100
+    #maxRetries = 7
+    static sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    async call(fn) {
+      for (let i = 0; i < this.#maxRetries; i++) {
+        await Retry.sleep(this.#sleepMs);
+        let result = fn();
+        if (result) return result;
+      }
+      throw `Retry failed after ${this.maxRetries} at ${this.sleepMs}ms`;
+    }
+  }
 
-    if (!subtitleWrap) {
+  async function subtitleTrackToggle() {
+    const subtitleWrapSel = '#body > ytd-transcript-body-renderer';
+
+    if (!document.querySelector(subtitleWrapSel)) {
       document.querySelector('#button > yt-icon.ytd-menu-renderer').click();
-      await sleep(250);
+      await Retry.sleep(250);
       const clickToShowSubs = document.querySelector(
         `#items > ytd-menu-service-item-renderer:nth-child(2) >
          tp-yt-paper-item > yt-formatted-string`);
@@ -88,18 +100,18 @@ console.log("Caption plugin loaded");
       clickToShowSubs.click();
     }
 
-    for (let i = 0; i < 7; i++) {
-      await sleep(100);
-      subtitleWrap = document.querySelector(
-        '#body > ytd-transcript-body-renderer');
+    new Retry().call(() => {
+      let subtitleWrap = document.querySelector(subtitleWrapSel);
       if (subtitleWrap && (divs = subtitleWrap.querySelectorAll('div'))) {
-        const subtitles = new Subtitles(divs);
-        window.tamperSubs = subtitles;
-        return Util.toast('Captions on');
+        return new Subtitles(divs);
       }
-    }
-
-    Util.toast('Failed getting captions');
+    }).then(subs => {
+      window.tamperSubs = subs;
+      Util.toast('Tracking with captions');
+    }).catch(msg => {
+      console.err(msg);
+      Util.toast('Failed getting captions');
+    });
   }
 
   window.onkeyup = document.onkeyup = Shortcut.init({
