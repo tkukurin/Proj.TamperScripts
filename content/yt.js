@@ -24,7 +24,7 @@ console.log("Caption plugin loaded");
     const subs = window.tamperSubs;
     const t = vid.currentTime;
     // TODO copy things *around* current captions
-    const maybeCaptions = (withCaptions && subs && subs.get(t).content) || '';
+    const maybeCaptions = (withCaptions && subs && subs.around(t).content) || '';
     const timeStr = [t/3600, (t/60)%60, (t%60)].map(n => parseInt(n)).map(
       (n, i) => n ? `${n}${'hms'[i]}` : '').join('');
     const url = timeToUrl(timeStr);
@@ -48,6 +48,13 @@ console.log("Caption plugin loaded");
       }
 
       this.subtitles = subtitles;
+    }
+
+    around(key, pre=5, post=5) {
+      const i = this.getIndex(key);
+      const subs = this.subtitles.slice(Math.max(0, i - pre), i + post);
+      const content = subs.map(s => s.content).join("\n");
+      return { content, tstamp: subs[0].tstamp, timeStr: subs[0].timeStr }
     }
 
     get(key) {
