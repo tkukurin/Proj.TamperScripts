@@ -120,6 +120,14 @@ console.log("Caption plugin loaded");
     a: [
       Shortcut.fun('a', () => copyUrl(false)),
       Shortcut.fun('c', () => copyUrl(true)),
+      Shortcut.fun('v', toggleTrack),
+      Shortcut.fun('w', () => {  // why w? no particular reason.
+        const title = document.querySelector(
+          "#info h1.title.ytd-video-primary-info-renderer").textContent;
+        const url = timeToUrl("0");
+        navigator.clipboard.writeText(`[${title}](${url})`);
+        Util.toast(`Copied title`);
+      }),
 
       Shortcut.sel('i', '.ytp-miniplayer-button'),
       Shortcut.sel('i', '.ytp-miniplayer-expand-watch-page-button'),
