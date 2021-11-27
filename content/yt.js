@@ -13,27 +13,36 @@
 console.log("Caption plugin loaded");
 
 (function() {
+  const getVideo = () => document.querySelector('video');
+
   function timeToUrl(timeStr) {
     const id = /\?v\=([^&]+)/g.exec(window.location.search);
     return (id && `https://youtu.be/${id[1]}?t=${timeStr}`) ||
       window.location.href.replace(/&t\=[^&]+/, `&t=${timeStr}`);
   }
 
+  function secsToHmsStr(tSec) {
+    const hms = [tSec/3600, (tSec/60)%60, (tSec%60)].map(n => parseInt(n));
+    return hms.map((n, i) => n ? `${n}${'hms'[i]}` : '').join('');
+  }
+
+  function captionRender(caption) {
+    return `${caption.timeStr}\n${caption.content}`;
+  }
+
   function copyUrl(withCaptions) {
-    // NOTE(tk) `?t=vid.currentTime` also works but h/m/s is semantically nicer
-    const vid = document.querySelector('video');
+    const vid = getVideo();
     const subs = window.tamperSubs;
     const t = vid.currentTime;
-    // TODO copy things *around* current captions
-    const maybeCaptions = (withCaptions && subs && subs.around(t).content) || '';
-    const timeStr = [t/3600, (t/60)%60, (t%60)].map(n => parseInt(n)).map(
-      (n, i) => n ? `${n}${'hms'[i]}` : '').join('');
+    const maybeCaptions = (withCaptions && subs && captionRender(subs.around(t))) || '';
+    const timeStr = secsToHmsStr(t);
     const url = timeToUrl(timeStr);
     const mdTimeCaptions = `[@${timeStr}](${url})\n${maybeCaptions}`.trim();
     navigator.clipboard.writeText(mdTimeCaptions);
     Util.toast(`Copied time ${maybeCaptions ? 'with' : 'without'} captions`);
   }
 
+  /** Wrapper for all subtitles in the current video. */
   class Subtitles {
     constructor(subtitleDivs) {
       const subtitles = [];
@@ -53,13 +62,18 @@ console.log("Caption plugin loaded");
 
     around(key, pre=5, post=5) {
       const i = this.getIndex(key);
-      const subs = this.subtitles.slice(Math.max(0, i - pre), i + post);
-      const content = subs.map(s => s.content).join("\n");
-      return { content, tstamp: subs[0].tstamp, timeStr: subs[0].timeStr }
+      return this.get(Math.max(0, i - pre), i + post);
     }
 
-    get(key) {
-      return this.subtitles[this.getIndex(key)];
+    get(key, maybeEndKey) {
+      const subs = this.subtitles;
+      const i0 = this.getIndex(key);
+      let content = subs[i0];
+      if (maybeEndKey) {
+        const i1 = this.getIndex(maybeEndKey);
+        content = subs.slice(i0, i1).map(x => x.content).join('\n');
+      }
+      return { content, tstamp: subs[i0].tstamp, timeStr: subs[i0].timeStr };
     }
 
     getIndex(key) {
@@ -74,6 +88,7 @@ console.log("Caption plugin loaded");
     }
   }
 
+  /** Constant backoff retry, throwing after `maxRetries` failures. */
   class Retry {
     #sleepMs = 100
     #maxRetries = 7
@@ -88,6 +103,7 @@ console.log("Caption plugin loaded");
     }
   }
 
+  /** Show subtitles next to the YT video, if available. */
   async function subtitleTrackToggle() {
     const subtitleWrapSel = '#body > ytd-transcript-body-renderer';
 
@@ -116,11 +132,39 @@ console.log("Caption plugin loaded");
     });
   }
 
+  /** Very quick class encapsulating all captions within a session. */
+  class Tracker {
+    static TIME_JITTER = 5;
+    prev = null;
+    trackedCaptions = [];
+    /** Toggles state: 1st starts tracking subtitles, then stores them. */
+    ckpt() {
+      const subs = window.tamperSubs;
+      const vid = getVideo();
+      if (!subs) return Util.toast('Subs not active');
+      if (!this.prev) {
+        Util.toast('Started tracking captions.');
+        this.prev = vid.currentTime;
+      } else {
+        // TODO sort by time, then consolidate overlaps
+        const caps = subs.get(
+          this.prev - Tracker.TIME_JITTER,
+          vid.currentTime + Tracker.TIME_JITTER);
+        this.trackedCaptions.push(caps);
+        Util.toast('Copied captions.');
+        navigator.clipboard.writeText(
+          this.trackedCaptions.map(captionRender).join('\n~~~\n'));
+        this.prev = null;
+      }
+    }
+  }
+
+  const tracker = new Tracker();
   window.onkeyup = document.onkeyup = Shortcut.init({
     a: [
       Shortcut.fun('a', () => copyUrl(false)),
       Shortcut.fun('c', () => copyUrl(true)),
-      Shortcut.fun('v', toggleTrack),
+      Shortcut.fun('v', () => tracker.ckpt()),
       Shortcut.fun('w', () => {  // why w? no particular reason.
         const title = document.querySelector(
           "#info h1.title.ytd-video-primary-info-renderer").textContent;
