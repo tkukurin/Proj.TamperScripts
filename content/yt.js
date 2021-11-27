@@ -94,11 +94,12 @@ console.log("Caption plugin loaded");
     if (!document.querySelector(subtitleWrapSel)) {
       document.querySelector('#button > yt-icon.ytd-menu-renderer').click();
       await Retry.sleep(250);
-      const clickToShowSubs = document.querySelector(
-        `#items > ytd-menu-service-item-renderer:nth-child(2) >
-         tp-yt-paper-item > yt-formatted-string`);
-      if (!clickToShowSubs) return Util.toast('No subs!');
-      clickToShowSubs.click();
+      const openTranscriptItem = Array.from(document.querySelectorAll(
+        `tp-yt-iron-dropdown.ytd-popup-container
+        #contentWrapper ytd-menu-service-item-renderer`))
+        .find(el => el.textContent.match("Open transcript"));
+      if (!openTranscriptItem) return Util.toast('No transcript item found!');
+      openTranscriptItem.click();
     }
 
     new Retry().call(() => {
