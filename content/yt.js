@@ -13,12 +13,13 @@
 console.log("Caption plugin loaded");
 
 (function() {
+  function timeToUrl(timeStr) {
+    const id = /\?v\=([^&]+)/g.exec(window.location.search);
+    return (id && `https://youtu.be/${id[1]}?t=${timeStr}`) ||
+      window.location.href.replace(/&t\=[^&]+/, `&t=${timeStr}`);
+  }
+
   function copyUrl(withCaptions) {
-    function timeToUrl(timeStr) {
-      const id = /\?v\=([^&]+)/g.exec(window.location.search);
-      return (id && `https://youtu.be/${id[1]}?t=${timeStr}`) ||
-        window.location.href.replace(/&t\=[^&]+/, `&t=${timeStr}`);
-    }
     // NOTE(tk) `?t=vid.currentTime` also works but h/m/s is semantically nicer
     const vid = document.querySelector('video');
     const subs = window.tamperSubs;
@@ -28,8 +29,8 @@ console.log("Caption plugin loaded");
     const timeStr = [t/3600, (t/60)%60, (t%60)].map(n => parseInt(n)).map(
       (n, i) => n ? `${n}${'hms'[i]}` : '').join('');
     const url = timeToUrl(timeStr);
-    const cpText = `[@${timeStr}](${url})\n${maybeCaptions}`.trim();
-    navigator.clipboard.writeText(cpText);
+    const mdTimeCaptions = `[@${timeStr}](${url})\n${maybeCaptions}`.trim();
+    navigator.clipboard.writeText(mdTimeCaptions);
     Util.toast(`Copied time ${maybeCaptions ? 'with' : 'without'} captions`);
   }
 
