@@ -68,6 +68,18 @@ class Thread {
     thread.addFrom(nodes);
   }
 
+  // TODO expanding replies?
+  // <div role="button" tabindex="0" class="css-18t94o4 css-1dbjc4n r-16y2uox
+  // r-19u6a5r r-1ny4l3l r-m2pi6t r-o7ynqc r-6416eg"><div class="css-1dbjc4n
+  // r-18u37iz"><div class="css-1dbjc4n r-1awozwy r-1kihuf0 r-1hwvwag r-18kxxzh
+  // r-10ptun7 r-1wtj0ep r-1b7u577 r-bnwqim"><div class="css-1dbjc4n r-1bimlpy
+  // r-1adg3ll r-epq5cr r-m5arl1"></div><div class="css-1dbjc4n r-1bimlpy
+  // r-1adg3ll r-epq5cr r-m5arl1"></div><div class="css-1dbjc4n r-1bimlpy
+  // r-1adg3ll r-epq5cr r-m5arl1"></div></div><div class="css-1dbjc4n r-1iusvr4
+  // r-16y2uox"><div dir="auto" class="css-901oao r-1n1174f r-37j5jr r-a023e6
+  // r-16dba41 r-rjixqe r-bcqeeo r-5njf8e r-qvutc0"><span class="css-901oao
+  // css-16my406 r-poiln3 r-bcqeeo r-qvutc0"> Show replies
+
   document.onkeyup = Shortcut.init({
     a: [
       Shortcut.fun('t', () => initThreadReader(new Thread())),
