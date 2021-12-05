@@ -38,6 +38,14 @@
       "all_frames": true
     },
     {
+      "matches": ["https://github.com/*"],
+      "js": [
+        "util/include.js",
+        "content/github.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
       "matches": ["https://twitter.com/*"],
       "js": [
         "util/include.js",
@@ -49,7 +57,6 @@
       "matches": ["https://www.youtube.com/*"],
       "js": [
         "util/include.js",
-        "content/captions.js",
         "content/yt.js"
       ],
       "run_at": "document_start"
