@@ -99,7 +99,7 @@ async function tryInitSubs() {
   const subtitleWrapSel = '#body > ytd-transcript-body-renderer';
 
   if (!document.querySelector(subtitleWrapSel)) {
-    document.querySelector('#button > yt-icon.ytd-menu-renderer').click();
+    document.querySelector('#info #button > yt-icon.ytd-menu-renderer').click();
     await Retry.sleep(250);
     const openTranscriptItem = Array.from(document.querySelectorAll(
       `tp-yt-iron-dropdown.ytd-popup-container
