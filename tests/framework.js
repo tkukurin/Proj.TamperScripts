@@ -4,14 +4,23 @@
  *  $ node test.js
  */
 
+// TODO convert objects here to class and add module.exports
+// If you just set `x = ...` then it's a global or something.
+
 // hack so it pretends to have HTML features
 NodeList = {prototype: {}}
 HTMLCollection = {prototype: {}}
+window = {__test: true};
 
-// TODO classes don't get defined in node?
 assert = {
   eq: function(x, y) {
-    const cond = x == y;
+    let cond = x == y;
+    if (typeof(x) == typeof(y) && x instanceof Array) {
+      cond = x.length == y.length;
+      for (let i = 0; i < x.length; i++) {
+        cond = cond && (x[i] == y[i]);
+      }
+    }
     if (!cond) {
       throw { x, y, status: 'fail' };
     }
@@ -29,8 +38,8 @@ function Wrap(f) {
 async function report(d, func) {
   let r = await func.run();
   if (r) {
-    console.error('¬ ', d);
-    console.error(' → ', r);
+    console.error(' ¬ ', d);
+    console.error('    →', r);
   } else {
     console.log(' ✓ ', d)
   }

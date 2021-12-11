@@ -50,6 +50,84 @@ Q.doc = (sel) => Q.el(sel, document);
 Q.one = (sel, el=document) => el.querySelector(sel);
 Q.all = (sel, el=document) => el.querySelectorAll(sel);
 
+
+/** Constant backoff retry. Throws after `maxRetries` failures. */
+class Retry {
+  #sleepMs = 100
+  #maxRetries = 7
+  static sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+  async call(fn) {
+    for (let i = 0; i < this.#maxRetries; i++) {
+      await Retry.sleep(this.#sleepMs);
+      let result = fn();
+      if (result) return result;
+    }
+    throw `Retry failed after ${this.maxRetries} at ${this.sleepMs}ms`;
+  }
+}
+
+
+/** According to SO, there is no sorted container in JS :'( */
+class SortedArray {
+  INSERT_NEW = 0;
+  INSERT_REPLACE = 1;
+
+  constructor(data, key) { // data is sorted eg. (data=[{a:1}, {a:5}], key='a')
+    this.data = data;
+    this.key = key;
+  }
+
+  map(f) { return this.data.map(f); }
+
+  insert(obj) { // insert *after*. [1,2] => (key=1->[1, *1*, 2])
+    const where = this.getIndex(obj[this.key]);
+    const rest = this.data.splice(where);
+    this.data.push(obj, ...rest);
+    return SortedArray.INSERT_NEW;
+  }
+
+  get(startKey, maybeEndKey) {
+    const i0 = this.getIndex(startKey);
+    let i1 = i0 + 1;
+    if (maybeEndKey) {
+      i1 = this.getIndex(maybeEndKey || startKey + 1);
+    } else {
+      // TODO do another binary search? depends on expected behavior
+      while (this.data[i1] && this.data[i1][this.key] == this.data[i0][this.key]) {
+        i1++;
+      }
+    }
+    return this.data.slice(i0, i1);
+  }
+
+  getIndex(key, startIndex = 0) { // [1,1,5] => (key=4->2), (key=5->3)
+    let start = startIndex;
+    let end = this.data.length;
+    while (start < end) {
+      let mid = Math.floor(start + (end - start) / 2);
+      let cur = this.data[mid];
+      if (cur && cur[this.key] >= key) end = mid;
+      else start = mid + 1;
+    }
+    return start;
+  }
+}
+
+/** Same as sorted, except it makes sure keys are unique. */
+class SortedUniqueArray extends SortedArray {
+  insert(obj) {  // return true if new object inserted
+    const key = obj[this.key];
+    const i0 = this.getIndex(key);
+    if (this.data[i0] && this.data[i0][this.key] == key) {
+      this.data[i0] = obj;
+      return SortedArray.INSERT_REPLACE;
+    }
+    const rest = this.data.splice(i0 + 1);
+    this.data.push(obj, ...rest);
+    return SortedArray.INSERT_NEW;
+  }
+}
+
 const Util = {
   newEl: (type, propsOrString) => {
     const el = document.createElement(type);
@@ -147,3 +225,11 @@ Shortcut.norm = (...modKeys) => F.retSelf(shortcut => {
   })[m])
 });
 
+
+// TODO dumb hack for node tests. investigate better.
+if (window.__test) {
+  module.exports = {
+    SortedArray,
+    SortedUniqueArray
+  };
+}

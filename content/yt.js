@@ -34,6 +34,7 @@ function copyUrl(withCaptions) {
   Util.toast(`Copied time ${content ? 'with' : 'without'} captions`);
 }
 
+
 /** Wrapper for all subtitles in the current video. */
 class Subtitles {
   constructor(subtitleDivs) {
@@ -49,7 +50,7 @@ class Subtitles {
       subtitles.push({timeStr, tstamp, content});
     }
 
-    this.subtitles = subtitles;
+    this.subs = new SortedArray(subtitles, 'tstamp');
   }
 
   around(secs, secsBefore=5, secsAfter=5) {
@@ -57,40 +58,9 @@ class Subtitles {
   }
 
   get(secs, maybeEndSecs) {
-    const subs = this.subtitles;
-    const i0 = this.getIndex(secs);
-    let content = subs[i0];
-    if (maybeEndSecs) {
-      const i1 = this.getIndex(maybeEndSecs);
-      content = subs.slice(i0, i1).map(x => x.content).join('\n');
-    }
-    return { content, tstamp: subs[i0].tstamp, timeStr: subs[i0].timeStr };
-  }
-
-  getIndex(secs) {
-    let start = 0;
-    let end = this.subtitles.length;
-    while (start < end) {
-      let mid = Math.ceil((start + end) / 2);
-      if (this.subtitles[mid].tstamp > secs) end = mid - 1;
-      else start = mid;
-    }
-    return start;
-  }
-}
-
-/** Constant backoff retry. Throws after `maxRetries` failures. */
-class Retry {
-  #sleepMs = 100
-  #maxRetries = 7
-  static sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  async call(fn) {
-    for (let i = 0; i < this.#maxRetries; i++) {
-      await Retry.sleep(this.#sleepMs);
-      let result = fn();
-      if (result) return result;
-    }
-    throw `Retry failed after ${this.maxRetries} at ${this.sleepMs}ms`;
+    let subs = this.subs.get(secs, maybeEndSecs);
+    const content = subs.map(x => x.content).join('\n');
+    return { content, tstamp: subs[0].tstamp, timeStr: subs[0].timeStr };
   }
 }
 
@@ -118,7 +88,7 @@ async function tryInitSubs() {
     window.tamperSubs = subs;
     Util.toast('Tracking with captions');
   }).catch(msg => {
-    console.err(msg);
+    console.error(msg);
     Util.toast('Failed getting captions');
   });
 }
@@ -127,7 +97,7 @@ async function tryInitSubs() {
 class Tracker {
   static TIME_JITTER = 5;
   prev = null;
-  trackedCaptions = [];
+  trackedCaptions = new SortedUniqueArray([], 'tstamp');
   /** Toggles state: 1st starts tracking subtitles, then stores them. */
   ckpt() {
     const subs = window.tamperSubs;
@@ -137,15 +107,20 @@ class Tracker {
       Util.toast('Started tracking captions.');
       this.prev = vid.currentTime;
     } else {
-      // TODO sort by time, then consolidate overlaps
+      // TODO this should work better with consolidating span overlaps
       const caps = subs.get(
         this.prev - Tracker.TIME_JITTER,
         vid.currentTime + Tracker.TIME_JITTER);
-      this.trackedCaptions.push(caps);
-      Util.toast('Copied captions.');
-      navigator.clipboard.writeText(
-        this.trackedCaptions.map(renderCaption).join('\n~~~\n'));
-      this.prev = null;
+      this.trackedCaptions.insert(caps);
+      Promise.try(
+        caps => caps.map(renderCaption).join('\n'), this.trackedCaptions)
+        .then(c => navigator.clipboard.writeText(c)).then(c => {
+          this.prev = null;
+          Util.toast('Copied captions.');
+        }).catch(err => {
+          console.error(err);
+          Util.toast('Failed copying');
+        });
     }
   }
 }
