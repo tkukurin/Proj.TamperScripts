@@ -201,3 +201,11 @@ Shortcut.norm = (...modKeys) => F.retSelf(shortcut => {
   })[m])
 });
 
+
+// TODO dumb hack for node tests. investigate better.
+if (window.__test) {
+  module.exports = {
+    SortedArray,
+    SortedUniqueArray
+  };
+}

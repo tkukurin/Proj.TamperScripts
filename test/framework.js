@@ -4,11 +4,14 @@
  *  $ node test.js
  */
 
+// TODO convert objects here to class and add module.exports
+// If you just set `x = ...` then it's a global or something.
+
 // hack so it pretends to have HTML features
 NodeList = {prototype: {}}
 HTMLCollection = {prototype: {}}
+window = {__test: true};
 
-// TODO classes don't get defined in node?
 assert = {
   eq: function(x, y) {
     const cond = x == y;
