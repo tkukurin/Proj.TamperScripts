@@ -29,7 +29,7 @@ describe('gets higher index for different vals', () => {
 describe('gets index in bounds', () => {
   let sc = new inc.SortedArray([{a:1}, {a: 1, b:'here'}], 'a');
   let i = sc.getIndex(2);
-  assert.eq(i, 1);
+  assert.eq(i, 2);
 });
 
 describe('multiple identical inserts before', () => {
@@ -48,6 +48,13 @@ describe('insert in unique works on empty', () => {
   sc.insert({a:20, b:'replaced'});
   assert.eq(sc.map(x => x.a), [20]);
   assert.eq(sc.get(20)[0].b, 'replaced');
+});
+
+describe('insert in unique works on last', () => {
+  let sc = new inc.SortedUniqueArray([{a:10}], 'a');
+  sc.insert({a:20, b:'heyo'});
+  assert.eq(sc.map(x => x.a), [10, 20]);
+  assert.eq(sc.get(20)[0].b, 'heyo');
 });
 
 describe('insert replaces existing for SortedUnique', () => {
