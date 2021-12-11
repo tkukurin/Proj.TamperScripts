@@ -50,6 +50,60 @@ Q.doc = (sel) => Q.el(sel, document);
 Q.one = (sel, el=document) => el.querySelector(sel);
 Q.all = (sel, el=document) => el.querySelectorAll(sel);
 
+
+/** According to SO, there is no sorted container in JS :'( */
+class SortedContainer {
+  INSERT_NEW = 0;
+  INSERT_REPLACE = 1;
+
+  constructor(data, key) { // data is sorted eg. (data=[{a:1}, {a:5}], key='a')
+    this.data = data;
+    this.key = key;
+  }
+
+  insert(obj) { // insert *after*. [1,2] => (key=1->[1, *1*, 2])
+    const where = this.getIndex(obj[this.key]);
+    const rest = this.data.splice(where + 1);
+    this.data.push(obj);
+    this.data.concat(rest);
+    return SortedContainer.INSERT_NEW;
+  }
+
+  get(startKey, maybeEndKey) {
+    const i0 = this.getIndex(startKey);
+    const i1 = maybeEndKey ? this.getIndex(maybeEndKey) : i0 + 1;
+    return this.data.slice(i0, i1);
+  }
+
+  getIndex(key, startIndex = 0) { // lower. [1,5] => (key=4->0), (key=5->1)
+    let start = startIndex;
+    let end = this.data.length;
+    while (start < end) {
+      let mid = Math.ceil((start + end) / 2);
+      let cur = this.data[mid];
+      if (cur && cur[this.key] > key) end = mid - 1;
+      else start = mid;
+    }
+    return start;
+  }
+}
+
+/** Same as sorted, except it makes sure keys are unique. */
+class SortedUniqueContainer extends SortedContainer {
+  insert(obj) {  // return true if new object inserted
+    const key = obj[this.key];
+    const i0 = this.getIndex(key);
+    if (this.data[i0] && this.data[i0][this.key] == key) {
+      this.data[i0] = obj;
+      return SortedContainer.INSERT_REPLACE;
+    }
+    const rest = this.data.splice(i0 + 1);
+    this.data.push(obj);
+    this.data.concat(rest);
+    return SortedContainer.INSERT_NEW;
+  }
+}
+
 const Util = {
   newEl: (type, propsOrString) => {
     const el = document.createElement(type);
