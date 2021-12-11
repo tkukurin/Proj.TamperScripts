@@ -100,10 +100,10 @@ class SortedArray {
     return this.data.slice(i0, i1);
   }
 
-  getIndex(key, startIndex = 0) { // lower. [1,5] => (key=4->0), (key=5->1)
+  getIndex(key, startIndex = 0) { // [1,1,5] => (key=4->2), (key=5->3)
     // TODO make this behave according to expectations
     let start = startIndex;
-    let end = this.data.length - 1;
+    let end = this.data.length;
     while (start < end) {
       let mid = Math.floor(start + (end - start) / 2);
       let cur = this.data[mid];
