@@ -111,14 +111,15 @@ class Tracker {
         this.prev - Tracker.TIME_JITTER,
         vid.currentTime + Tracker.TIME_JITTER);
       this.trackedCaptions.insert(caps);
-      // TODO easiest way to use tracked captions as container?
-      Promise.try(caps => caps.map(renderCaption).join('\n'), this.trackedCaptions)
-        .then(navigator.clipboard.writeText)
-        .then(() => {
+      Promise.try(
+        caps => caps.map(renderCaption).join('\n'), this.trackedCaptions)
+        .then(c => navigator.clipboard.writeText(c)).then(c => {
           this.prev = null;
           Util.toast('Copied captions.');
-        })
-        .catch(err => Util.toast('Failed copying'));
+        }).catch(err => {
+          console.error(err);
+          Util.toast('Failed copying');
+        });
     }
   }
 }
