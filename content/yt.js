@@ -34,6 +34,7 @@ function copyUrl(withCaptions) {
   Util.toast(`Copied time ${content ? 'with' : 'without'} captions`);
 }
 
+
 /** Wrapper for all subtitles in the current video. */
 class Subtitles {
   constructor(subtitleDivs) {
@@ -49,7 +50,7 @@ class Subtitles {
       subtitles.push({timeStr, tstamp, content});
     }
 
-    this.subtitles = subtitles;
+    this.subs = new SortedContainer(subtitles, 'tstamp');
   }
 
   around(secs, secsBefore=5, secsAfter=5) {
@@ -57,25 +58,9 @@ class Subtitles {
   }
 
   get(secs, maybeEndSecs) {
-    const subs = this.subtitles;
-    const i0 = this.getIndex(secs);
-    let content = subs[i0];
-    if (maybeEndSecs) {
-      const i1 = this.getIndex(maybeEndSecs);
-      content = subs.slice(i0, i1).map(x => x.content).join('\n');
-    }
-    return { content, tstamp: subs[i0].tstamp, timeStr: subs[i0].timeStr };
-  }
-
-  getIndex(secs) {
-    let start = 0;
-    let end = this.subtitles.length;
-    while (start < end) {
-      let mid = Math.ceil((start + end) / 2);
-      if (this.subtitles[mid].tstamp > secs) end = mid - 1;
-      else start = mid;
-    }
-    return start;
+    let subs = this.subs.get(secs, maybeEndSecs);
+    const content = subs.map(x => x.content).join('\n');
+    return { content, tstamp: subs[0].tstamp, timeStr: subs[0].timeStr };
   }
 }
 
@@ -118,7 +103,7 @@ async function tryInitSubs() {
     window.tamperSubs = subs;
     Util.toast('Tracking with captions');
   }).catch(msg => {
-    console.err(msg);
+    console.error(msg);
     Util.toast('Failed getting captions');
   });
 }
@@ -127,7 +112,7 @@ async function tryInitSubs() {
 class Tracker {
   static TIME_JITTER = 5;
   prev = null;
-  trackedCaptions = [];
+  trackedCaptions = new SortedUniqueContainer([], 'tstamp');
   /** Toggles state: 1st starts tracking subtitles, then stores them. */
   ckpt() {
     const subs = window.tamperSubs;
@@ -137,15 +122,18 @@ class Tracker {
       Util.toast('Started tracking captions.');
       this.prev = vid.currentTime;
     } else {
-      // TODO sort by time, then consolidate overlaps
       const caps = subs.get(
         this.prev - Tracker.TIME_JITTER,
         vid.currentTime + Tracker.TIME_JITTER);
-      this.trackedCaptions.push(caps);
-      Util.toast('Copied captions.');
-      navigator.clipboard.writeText(
-        this.trackedCaptions.map(renderCaption).join('\n~~~\n'));
-      this.prev = null;
+      this.trackedCaptions.insert(caps);
+      // TODO easiest way to use tracked captions as container?
+      Promise.try(caps => caps.map(renderCaption).join('\n'), this.trackedCaptions)
+        .then(navigator.clipboard.writeText)
+        .then(() => {
+          this.prev = null;
+          Util.toast('Copied captions.');
+        })
+        .catch(err => Util.toast('Failed copying'));
     }
   }
 }
