@@ -107,6 +107,7 @@ class Tracker {
       Util.toast('Started tracking captions.');
       this.prev = vid.currentTime;
     } else {
+      // TODO this should work better with consolidating span overlaps
       const caps = subs.get(
         this.prev - Tracker.TIME_JITTER,
         vid.currentTime + Tracker.TIME_JITTER);

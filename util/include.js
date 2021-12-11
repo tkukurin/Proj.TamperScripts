@@ -101,7 +101,6 @@ class SortedArray {
   }
 
   getIndex(key, startIndex = 0) { // [1,1,5] => (key=4->2), (key=5->3)
-    // TODO make this behave according to expectations
     let start = startIndex;
     let end = this.data.length;
     while (start < end) {
