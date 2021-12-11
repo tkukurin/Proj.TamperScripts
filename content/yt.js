@@ -50,7 +50,7 @@ class Subtitles {
       subtitles.push({timeStr, tstamp, content});
     }
 
-    this.subs = new SortedContainer(subtitles, 'tstamp');
+    this.subs = new SortedArray(subtitles, 'tstamp');
   }
 
   around(secs, secsBefore=5, secsAfter=5) {
@@ -61,21 +61,6 @@ class Subtitles {
     let subs = this.subs.get(secs, maybeEndSecs);
     const content = subs.map(x => x.content).join('\n');
     return { content, tstamp: subs[0].tstamp, timeStr: subs[0].timeStr };
-  }
-}
-
-/** Constant backoff retry. Throws after `maxRetries` failures. */
-class Retry {
-  #sleepMs = 100
-  #maxRetries = 7
-  static sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  async call(fn) {
-    for (let i = 0; i < this.#maxRetries; i++) {
-      await Retry.sleep(this.#sleepMs);
-      let result = fn();
-      if (result) return result;
-    }
-    throw `Retry failed after ${this.maxRetries} at ${this.sleepMs}ms`;
   }
 }
 
@@ -112,7 +97,7 @@ async function tryInitSubs() {
 class Tracker {
   static TIME_JITTER = 5;
   prev = null;
-  trackedCaptions = new SortedUniqueContainer([], 'tstamp');
+  trackedCaptions = new SortedUniqueArray([], 'tstamp');
   /** Toggles state: 1st starts tracking subtitles, then stores them. */
   ckpt() {
     const subs = window.tamperSubs;
