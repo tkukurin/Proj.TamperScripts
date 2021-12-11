@@ -1,14 +1,6 @@
-// cf. https://stackoverflow.com/questions/24042953/how-to-automatically-load-a-local-script-file-in-an-external-website
-// ==UserScript==
-// @name         TamperLib
-// @namespace    tkukurin
-// @version      0.2
-// @description  Generic functions
-// @author       Toni Kukurin
-// @grant        none
-// ==/UserScript==
+/** Stuff that seems relatively generic. */
 
-// TODO(tk) investigate if this will work in any situation
+// Not the best idea but whatevs, monkey patching
 NodeList.prototype.forEach = Array.prototype.forEach;
 NodeList.prototype.flatMap = Array.prototype.flatMap;
 NodeList.prototype.filter = Array.prototype.filter;
@@ -24,6 +16,14 @@ HTMLCollection.prototype.forEach = Array.prototype.forEach;
 HTMLCollection.prototype.flatMap = Array.prototype.flatMap;
 HTMLCollection.prototype.filter = Array.prototype.filter;
 HTMLCollection.prototype.map = Array.prototype.map;
+
+Promise.try = function(fn, ...args) {
+  return new Promise((ok, err) => {
+    try { ok(fn(...args)); }
+    catch(e) { err(e); }
+  });
+};
+
 
 // Function wrappers
 const F = {};
