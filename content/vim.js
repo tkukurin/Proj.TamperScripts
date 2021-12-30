@@ -94,18 +94,71 @@ class BaseState extends State {
       case FollowState.OPEN_CUR: case FollowState.OPEN_TAB:
         const follow = new FollowState(c);
         return follow.links.length ? follow : this;
+
       case 'm': return new MarkState();
+      case 'y': return new YankState();
     }
     return this;
   }
+}
+
+
+// TODO(tk) improve the heuristics (moz-readability-like?).
+// TODO(tk) consolidate some elements with FollowState.
+/** Copy text verbatim from heuristically selected elements. */
+class YankState extends State {
+  static #visibleElemsWithHints(chars) {
+    const text = document.querySelectorAll('p,li,td,h1,h2,h3,h4,h5').filter(
+      Util.isVisible);
+    const maxlen = Math.pow(chars.length, 2)
+    if (text.length > maxlen) {
+      console.warn(`Found ${text.length} links (> ${maxlen})`);
+    }
+    return text.slice(0, maxlen).map((el, i) => {
+      const hint = chars[parseInt(i / chars.length)] + chars[i % chars.length];
+      el.append(Util.newEl('div', {className: '__vim_follow', innerHTML: hint}));
+      return {hint, el};
+    });
+  }
+
+  constructor() {
+    super();
+    this.texts = YankState.#visibleElemsWithHints('asdfqwerzxcvplmokijn');
+    this.accum = '';
+  }
+
+  nextHook(c) {
+
+    switch(c) { // for now this is just excluded from the list of hint chars
+      case 't': // yank title
+        const url = window.location.href;
+        const show = document.querySelector('h1').innerText || window.location.host;
+        navigator.clipboard.writeText(`[${show}](${url})`);
+        Util.toast('Copied title.');
+        return this.reset();
+    }
+
+    this.accum += c;
+    this.texts = this.texts.filter(({hint, el}) =>
+      hint.startsWith(this.accum) || el.lastChild.remove());
+    let found = this.texts.find(({hint, _}) => hint == this.accum);
+    let ret = this;
+    if (found || !this.texts) {
+      ret = this.reset(); // purposefully before copy - rm hints from inner text
+      navigator.clipboard.writeText(found?.el.innerText)
+    }
+    return ret;
+  }
+
+  resetHook() { this.texts.forEach(({_, el}) => el.lastChild.remove()); }
 }
 
 class FollowState extends State {
   static OPEN_TAB = 'F';
   static OPEN_CUR = 'f';
   static #visibleElemsWithHints(chars) {
-    const clickables = document.querySelectorAll('a').concat(
-      document.querySelectorAll('button')).filter(Util.isVisible);
+    const clickables = document.querySelectorAll('a,button').filter(
+      Util.isVisible);
     const maxlen = Math.pow(chars.length, 2)
     if (clickables.length > maxlen) {
       console.warn(`Found ${clickables.length} links (> ${maxlen})`);
