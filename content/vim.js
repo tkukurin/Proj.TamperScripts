@@ -121,6 +121,16 @@ class YankState extends State {
     });
   }
 
+  static #findTitle() {
+    let title = null;
+    for (let sel of ['.title', '#title', 'h1']) {
+      title = Array.from(document.querySelectorAll(sel))
+        .map(t => t?.innerText.trim()).join(' ').trim();
+      if (title.length) break;
+    }
+    return title.replace('\n', ' ') || window.location.host;
+  }
+
   constructor() {
     super();
     this.texts = YankState.#visibleElemsWithHints('asdfqwerzxcvplmokijn');
@@ -128,11 +138,10 @@ class YankState extends State {
   }
 
   nextHook(c) {
-
     switch(c) { // for now this is just excluded from the list of hint chars
       case 't': // yank title
         const url = window.location.href;
-        const show = document.querySelector('h1').innerText || window.location.host;
+        const show = YankState.#findTitle();
         navigator.clipboard.writeText(`[${show}](${url})`);
         Util.toast('Copied title.');
         return this.reset();
@@ -236,8 +245,8 @@ document.addEventListener('keydown', e => {
     s = new NullState();
   }
 }, true);
-document.addEventListener('keyup', e => {
-  // fixes some bug w/ twitter script maybe? esc not triggered on keydown
-  e.key === 'Escape' && (s = s.reset());
-});
+// document.addEventListener('keyup', e => {
+//   // fixes some bug w/ twitter script maybe? esc not triggered on keydown
+//   e.key === 'Escape' && (s = s.reset());
+// });
 
