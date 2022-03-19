@@ -40,13 +40,10 @@ class Subtitles {
   constructor(subtitleDivs) {
     const subtitles = [];
     for (let subtitleDiv of subtitleDivs) {
-      let innerDivs = subtitleDiv.querySelectorAll('div');
-      if (!innerDivs || innerDivs.length < 3) continue;
-      let timeStr = innerDivs[0].innerText.trim();
+      let [timeStr, content] = subtitleDiv.innerText.split('\n', 2);
       let tstamp = timeStr.split(':').map(n => parseInt(n)).reverse()
         .map((n, i) => (n * Math.pow(60, i)))
         .reduce((a, b) => a + b);
-      let content = innerDivs[2].innerText.trim();
       subtitles.push({timeStr, tstamp, content});
     }
 
@@ -66,24 +63,20 @@ class Subtitles {
 
 /** If available, show subtitles next to the YT video and start tracking. */
 async function tryInitSubs() {
-  const subtitleWrapSel = '#body > ytd-transcript-body-renderer';
-
-  if (!document.querySelector(subtitleWrapSel)) {
-    document.querySelector('#info #button > yt-icon.ytd-menu-renderer').click();
-    await Retry.sleep(250);
-    const openTranscriptItem = Array.from(document.querySelectorAll(
-      `tp-yt-iron-dropdown.ytd-popup-container
-      #contentWrapper ytd-menu-service-item-renderer`))
-      .find(el => el.textContent.match("Open transcript"));
-    if (!openTranscriptItem) return Util.toast('No transcript item found!');
-    openTranscriptItem.click();
-  }
+  const subtitleWrapSel = '*[target-id=engagement-panel-searchable-transcript]';
+  document.querySelector('#info #button > yt-icon.ytd-menu-renderer').click();
+  await Retry.sleep(250);
+  const openTranscriptItem = Array.from(document.querySelectorAll(
+    `tp-yt-iron-dropdown.ytd-popup-container
+    #contentWrapper ytd-menu-service-item-renderer`))
+    .find(el => el.textContent.match("Show transcript"));
+  if (!openTranscriptItem) return Util.toast('No transcript item found!');
+  openTranscriptItem.click();
 
   new Retry().call(() => {
-    let subtitleWrap = document.querySelector(subtitleWrapSel);
-    if (subtitleWrap && (divs = subtitleWrap.querySelectorAll('div'))) {
-      return new Subtitles(divs);
-    }
+    let subWrap = document.querySelector(subtitleWrapSel);
+    let subs = subWrap.querySelectorAll('#body ytd-transcript-segment-renderer');
+    return new Subtitles(subs);
   }).then(subs => {
     window.tamperSubs = subs;
     Util.toast('Tracking with captions');
