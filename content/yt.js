@@ -55,7 +55,10 @@ class Subtitles {
   }
 
   get(secs, maybeEndSecs) {
-    let subs = this.subs.get(secs, maybeEndSecs);
+    const subs = this.subs.get(secs, maybeEndSecs);
+    if (!subs.length) {  // no subs, but return position
+      return {tstamp: secs, timeStr: secsToHmsStr(secs)};
+    }
     const content = subs.map(x => x.content).join('\n');
     return { content, tstamp: subs[0].tstamp, timeStr: subs[0].timeStr };
   }
@@ -75,8 +78,9 @@ async function tryInitSubs() {
 
   new Retry().call(() => {
     let subWrap = document.querySelector(subtitleWrapSel);
-    let subs = subWrap.querySelectorAll('#body ytd-transcript-segment-renderer');
-    return new Subtitles(subs);
+    if (subs = subWrap.querySelectorAll('#body ytd-transcript-segment-renderer')) {
+      return new Subtitles(subs);
+    }
   }).then(subs => {
     window.tamperSubs = subs;
     Util.toast('Tracking with captions');
