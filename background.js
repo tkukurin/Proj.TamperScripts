@@ -91,6 +91,7 @@ function saveToIndexedDB(url, details) {
 }
 
 function saveToIndexedDB(url, details) {
+  // https://developer.chrome.com/docs/devtools/storage/indexeddb/
   const requestData = {
     url: url,
     method: details.method,
