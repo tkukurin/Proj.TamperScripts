@@ -38,71 +38,100 @@ chrome.runtime.onMessage.addListener((req, sender, callback) => {
 // details.documentUrl: The URL of the document in which the request originated.
 
 
-// const fileQueue = {};
+// Open or create the IndexedDB database
+const dbPromise = new Promise((resolve, reject) => {
+  const request = indexedDB.open("tk_NetworkRequests", 1);
+  request.onerror = function (event) {
+    console.error("Error opening database:", event.target.errorCode);
+    reject(event.target.errorCode);
+  };
+  request.onupgradeneeded = function (event) {
+    const db = event.target.result;
+    if (!db.objectStoreNames.contains("requests")) {
+      const objectStore = db.createObjectStore(
+        "requests", { keyPath: "id", autoIncrement: true }
+      );
+      objectStore.createIndex("url", "url", { unique: false });
+      objectStore.createIndex("body", "body", { unique: true });
+    }
+    if (!db.objectStoreNames.contains("requests")) {
+    }
+  };
+
+  request.onsuccess = function (event) {
+    const db = event.target.result;
+    resolve(db);
+  };
+});
+
+function saveToIndexedDB(url, details) {
+  const requestData = {
+    url: url,
+    method: details.method,
+    requestHeaders: details.requestHeaders,
+    // Add more properties as needed
+  };
+
+  // Open the database and perform the transaction
+  dbPromise.then((db) => {
+    const transaction = db.transaction(["requests"], "readwrite");
+    const objectStore = transaction.objectStore("requests");
+
+    // Add the data to the 'requests' object store
+    const request = objectStore.add(requestData);
+
+    request.onsuccess = function (event) {
+      console.log("Data saved to IndexedDB:", requestData);
+    };
+
+    request.onerror = function (event) {
+      console.error("Error saving data to IndexedDB:", event.target.errorCode);
+    };
+  });
+}
+
+function saveToIndexedDB(url, details) {
+  const requestData = {
+    url: url,
+    method: details.method,
+    requestHeaders: details.requestHeaders,
+    timestamp: new Date().toISOString(),
+  };
+
+  dbPromise.then((db) => {
+    const transaction = db.transaction(["requests"], "readwrite");
+    const objectStore = transaction.objectStore("requests");
+
+    const urlIndex = objectStore.index("url");
+    const request = urlIndex.get(url);
+
+    request.onsuccess = function (event) {
+      const existingRequest = event.target.result;
+
+      if (!existingRequest) {
+        // If the URL doesn't exist, add the data to the object store
+        objectStore.add(requestData).onsuccess = function () {
+          console.log("Data saved to IndexedDB:", requestData);
+        };
+      } else {
+        console.log("Duplicate request, not saved:", requestData);
+      }
+    };
+
+    request.onerror = function (event) {
+      console.error("Error checking duplicate URL:", event.target.errorCode);
+    };
+  });
+}
+
 
 chrome.runtime.onInstalled.addListener(function () {
   chrome.webRequest.onBeforeRequest.addListener(
     function (details) {
-      saveToFile(details.url, details);
+      saveToIndexedDB(details.url, details);
     },
-    { urls: ["<all_urls>"] },
+    //{ urls: ["<all_urls>"] },
+    { urls: ["https://statquest.org/statquest-store/"] },
     ["blocking"]
   );
-
-
-  function saveToFile(url, details) {
-    const domain = extractDomain(url);
-    const filename = `requests/${domain}.json`;
-    const requestData = {
-      url: url,
-      method: details.method,
-      body: details.requestBody,
-    };
-
-    // if (fileQueue[filename]) {
-    //   setTimeout(() => {
-    //       saveToFile(url, details);
-    //   }, 100);
-    // }
-
-    const content = JSON.stringify(requestData, null, 2);
-    // Check if the file already exists
-    chrome.downloads.search({ filename: filename }, (results) => {
-      if (results && results.length > 0) {
-        // File exists, read existing content
-        chrome.downloads.getFileIcon(results[0].id, { size: 0 }, (icon) => {
-          const reader = new FileReader();
-          reader.onloadend = function () {
-            const existingContent = reader.result || '';
-            const updatedContent = existingContent + '\n' + content;
-
-            // Save the updated content back to the same file
-            chrome.downloads.download({
-              url: URL.createObjectURL(new Blob([updatedContent], { type: "application/json" })),
-              filename: filename,
-              saveAs: false,
-            });
-          };
-          reader.readAsText(icon);
-        });
-      } else {
-        // File doesn't exist, create a new file
-        chrome.downloads.download({
-          url: URL.createObjectURL(new Blob([content], { type: "application/json" })),
-          filename: filename,
-          saveAs: false,
-        });
-      }
-    });
-  }
-
-  function extractDomain(url) {
-    const matches = url.match(/^https?:\/\/([^/]+)/i);
-    if (matches && matches[1]) {
-      return matches[1];
-    }
-    // Default to using the full URL as the domain
-    return url;
-  }
-
 });
