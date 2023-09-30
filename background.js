@@ -37,27 +37,72 @@ chrome.runtime.onMessage.addListener((req, sender, callback) => {
 // details.incognito: Indicates whether the request is in incognito mode.
 // details.documentUrl: The URL of the document in which the request originated.
 
+
+// const fileQueue = {};
+
 chrome.runtime.onInstalled.addListener(function () {
   chrome.webRequest.onBeforeRequest.addListener(
     function (details) {
-      // Save the request to a file
-      console.log("Request intercepted:", details.url);
-      saveToFile(details.url);
+      saveToFile(details.url, details);
     },
     { urls: ["<all_urls>"] },
     ["blocking"]
   );
 
-  function saveToFile(url) {
-    // You can customize the file-saving logic here
-    // For simplicity, this example uses the Downloads API to download a file
-    const filename = "network_logs.txt";
-    const content = `${url}\n`;
 
-    chrome.downloads.download({
-      url: URL.createObjectURL(new Blob([content], { type: "text/plain" })),
-      filename: filename,
-      saveAs: false,
+  function saveToFile(url, details) {
+    const domain = extractDomain(url);
+    const filename = `requests/${domain}.json`;
+    const requestData = {
+      url: url,
+      method: details.method,
+      body: details.requestBody,
+    };
+
+    // if (fileQueue[filename]) {
+    //   setTimeout(() => {
+    //       saveToFile(url, details);
+    //   }, 100);
+    // }
+
+    const content = JSON.stringify(requestData, null, 2);
+    // Check if the file already exists
+    chrome.downloads.search({ filename: filename }, (results) => {
+      if (results && results.length > 0) {
+        // File exists, read existing content
+        chrome.downloads.getFileIcon(results[0].id, { size: 0 }, (icon) => {
+          const reader = new FileReader();
+          reader.onloadend = function () {
+            const existingContent = reader.result || '';
+            const updatedContent = existingContent + '\n' + content;
+
+            // Save the updated content back to the same file
+            chrome.downloads.download({
+              url: URL.createObjectURL(new Blob([updatedContent], { type: "application/json" })),
+              filename: filename,
+              saveAs: false,
+            });
+          };
+          reader.readAsText(icon);
+        });
+      } else {
+        // File doesn't exist, create a new file
+        chrome.downloads.download({
+          url: URL.createObjectURL(new Blob([content], { type: "application/json" })),
+          filename: filename,
+          saveAs: false,
+        });
+      }
     });
   }
+
+  function extractDomain(url) {
+    const matches = url.match(/^https?:\/\/([^/]+)/i);
+    if (matches && matches[1]) {
+      return matches[1];
+    }
+    // Default to using the full URL as the domain
+    return url;
+  }
+
 });
