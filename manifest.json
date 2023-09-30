@@ -14,10 +14,16 @@
     "downloads.shelf",
     "clipboardRead",
     "clipboardWrite",
-    "webNavigation"
+    "management",
+    "tabs",
+    "webRequest",
+    "webRequestBlocking",
+    "webNavigation",
+    "http://*/*",
+    "https://*/*"
   ],
   "background": {
-    "persistant": false,
+    "persistent": true,
     "scripts": [
       "background.js",
       "util/include.js"
@@ -54,10 +60,26 @@
       "run_at": "document_start"
     },
     {
+      "matches": ["https://app.slack.com/*"],
+      "js": [
+        "util/include.js",
+        "content/slack.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
       "matches": ["https://www.youtube.com/*"],
       "js": [
         "util/include.js",
         "content/yt.js"
+      ],
+      "run_at": "document_start"
+    },
+    {
+      "matches": ["https://arxiv.org/*"],
+      "js": [
+        "util/include.js",
+        "content/arxiv.js"
       ],
       "run_at": "document_start"
     },
@@ -79,6 +101,23 @@
     {
       "matches": [ "https://www.reddit.com/*" ],
       "js": ["content/reddit.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.yesmovies.ag/*",
+        "https://yesmovies.ag/*"
+      ],
+      "js": ["content/ymov.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://web.facebook.com/?*",
+        "https://www.facebook.com/",
+        "https://www.index.hr/*"
+      ],
+      "css": ["css/hide.css"],
       "run_at": "document_idle"
     }
   ]
