@@ -15,6 +15,19 @@ class Thread {
   content = []
 
   addFrom(nodes) {
+    function _handleNode(node) {
+      let result = [];
+      for (let child of node.children) {
+        let a = child.querySelector("a");
+        var text = child.textContent;
+        if (a) {
+          text = `[${text}](${a.href})`
+        }
+        result.push(text);
+      }
+      return result.join("");
+    }
+
     Array.from(nodes)
       .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
       .map(node => ({
@@ -24,8 +37,7 @@ class Thread {
       }))
       .filter(node => node.texts)
       .forEach(obj => this.#add({
-        text: obj.texts.map(n => n.textContent)
-          .map(t => t.replace(/\n+/, ' ')).join('\n> ').trim(),
+        text: obj.texts.map(_handleNode).join("\n").trim(),
         // We're okay with NaN if time is not available.
         time: new Date((obj.time || {}).dateTime).getTime(),
       }));
