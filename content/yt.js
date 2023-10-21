@@ -64,17 +64,50 @@ class Subtitles {
   }
 }
 
+function tryFindTranscripts() {
+  let treeWalker = document.createTreeWalker(
+    document.body,
+    NodeFilter.SHOW_TEXT,
+    {
+      acceptNode: function(node) {
+        if (/\b(Show transcript|Display transcript|Transcript|View transcript|See transcript)\b/i.test(node.nodeValue)) {
+            return NodeFilter.FILTER_ACCEPT;
+        }
+      }
+    },
+    false
+  );
+
+  function findParentBtn(node) {
+    for (var i = 0, parent = node.parentNode; i < 5 && node; i++, parent = (node || {}).parentNode) {
+      if (node.tagName == 'BUTTON') {
+        return node;
+      }
+      node = parent;
+    }
+    return null;
+  }
+
+  let nodes = [];
+  while(treeWalker.nextNode()) {
+    var parentBtn = findParentBtn(treeWalker.currentNode);
+    if (parentBtn) {
+      nodes.push(parentBtn);
+    }
+  }
+  return nodes;
+}
+
 /** If available, show subtitles next to the YT video and start tracking. */
 async function tryInitSubs() {
   const subtitleWrapSel = '*[target-id=engagement-panel-searchable-transcript]';
   document.querySelector('#info #button > yt-icon.ytd-menu-renderer').click();
   await Retry.sleep(250);
-  const openTranscriptItem = Array.from(document.querySelectorAll(
-    `tp-yt-iron-dropdown.ytd-popup-container
-    #contentWrapper ytd-menu-service-item-renderer`))
-    .find(el => el.textContent.match("Show transcript"));
-  if (!openTranscriptItem) return Util.toast('No transcript item found!');
-  openTranscriptItem.click();
+  const openTranscriptItem = tryFindTranscripts()
+  if (!openTranscriptItem.length) return Util.toast('No transcript item found!');
+  // this actually does happen on yt ... not sure if should have better chk
+  // if (openTranscriptItem.length > 1) { console.log("Found multiple candidates:", openTranscriptItem); }
+  openTranscriptItem[0].click();
 
   new Retry().call(() => {
     let subWrap = document.querySelector(subtitleWrapSel);
