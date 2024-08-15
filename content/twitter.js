@@ -9,35 +9,62 @@
 // @grant        none
 // ==/UserScript==
 
-const TIMELINE_ARIA = 'Timeline: Conversation';
+function parseTweet(container) {
+  const article = container.querySelector('[data-testid="tweet"]');
+  if (!article) return null;
+
+  const username = article.querySelector('[data-testid="User-Name"] span')?.textContent || 'Unknown User';
+  const handle = article.querySelector('[data-testid="User-Name"] a')?.href.split('/').pop() || 'unknown_handle';
+  const time = article.querySelector('time')?.textContent || 'Unknown Time';
+
+  const texts = article.querySelectorAll('[data-testid="tweetText"] span');
+  const text = Array.from(texts).map(t => {
+      const maybeLink = t.querySelector('a');
+      if (maybeLink) {
+          return `[${maybeLink.innerText.trim()}](${maybeLink.href})`;
+      }
+      return t.innerText.trim();
+  }).join(' ');
+
+  const imgElements = article.querySelectorAll('[data-testid="tweetPhoto"] img');
+  const imgSrcs = Array.from(imgElements).map(img => `![](${img.src})`).join('\n');
+
+  const videoElement = article.querySelector('[data-testid="videoPlayer"] video');
+  const videoSrc = videoElement ? `Video: [Watch Video](${videoElement.src})` : '';
+
+  const gifElement = article.querySelector('[data-testid="tweetGif"] img');
+  const gifSrc = gifElement ? `GIF: ![](${gifElement.src})` : '';
+
+  const quoteContainer = container.querySelector('div[aria-labelledby^="id__"]');
+  const quoteTweet = quoteContainer ? (parseTweet(quoteContainer) || ''): '';
+
+  const txt = `@${handle} (${username}) @ ${time}\n${text}\n\n${imgSrcs}\n${videoSrc}\n${gifSrc}\n\n${quoteTweet}`;
+  return {
+    tweet: txt,
+    time: new Date((time || {}).dateTime).getTime(),
+  }
+}
+// console.log(Array.from(document.querySelectorAll('main div[aria-label="Timeline: Conversation"] > div > div')).map(x => x && parseTweet(x).trim()).filter(x => x).join('\n\n'))
+
 
 class Thread {
   content = []
 
   addFrom(nodes) {
-    function _handleNode(node) {
-      let result = [];
-      for (let child of node.children) {
-        let a = child.querySelector("a");
-        var text = child.textContent;
-        if (a) {
-          text = `[${text}](${a.href})`
-        }
-        result.push(text);
-      }
-      return result.join("");
-    }
-
     Array.from(nodes)
-      .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
-      .map(node => ({
-        // NOTE(tk) seems usually 1st is original tweet, 2nd is quote tweet
-        texts: node.querySelectorAll('[lang="en"]'),
-        time: node.querySelector('time')
-      }))
-      .filter(node => node.texts)
+      // .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
+      // .map(node => ({
+      //   // NOTE(tk) seems usually 1st is original tweet, 2nd is quote tweet
+      //   texts: node.querySelectorAll(sel),
+      //   //texts: node.querySelectorAll('[lang="en"]'),
+      //   time: node.querySelector('time')
+      // }))
+      // .filter(node => node.texts)
+      .filter(x => x)
+      .map(parseTweet)
+      .filter(t => t && t.tweet && t.tweet != 'null')
       .forEach(obj => this.#add({
-        text: obj.texts.map(_handleNode).join("\n").trim(),
+        text: obj.tweet, //obj.texts.map(_handleNode).join("\n").trim(),
         // We're okay with NaN if time is not available.
         time: new Date((obj.time || {}).dateTime).getTime(),
       }));
@@ -51,7 +78,7 @@ class Thread {
 
   toString() {
     this.content = this.content.sort(c => c.time);
-    return this.content.map(c => c.text).join('\n\n');
+    return this.content.map(c => c.text).join('\n\n---\n\n');
   }
 }
 
@@ -76,8 +103,8 @@ class Thread {
     });
 
     Q.el('main').then(el => obsNewNodes.observe(el, {childList:true, subtree: true}));
-    const nodes = Q.all(`[aria-label="${TIMELINE_ARIA}"] > div > div`);
-    thread.addFrom(nodes);
+    const sel = 'main div[aria-label="Timeline: Conversation"] > div > div'
+    thread.addFrom(Q.all(sel));
   }
 
   // TODO expanding replies?
