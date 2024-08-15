@@ -10,6 +10,7 @@
 // ==/UserScript==
 
 function parseTweet(container) {
+  if (!container) return null;
   const article = container.querySelector('[data-testid="tweet"]');
   if (!article) return null;
 
@@ -35,50 +36,38 @@ function parseTweet(container) {
   const gifElement = article.querySelector('[data-testid="tweetGif"] img');
   const gifSrc = gifElement ? `GIF: ![](${gifElement.src})` : '';
 
-  const quoteContainer = container.querySelector('div[aria-labelledby^="id__"]');
-  const quoteTweet = quoteContainer ? (parseTweet(quoteContainer) || ''): '';
+  // TODO currently we just capture it via `text` above
+  // const quoteContainer = container.querySelector('div[aria-labelledby^="id__"]');
+  // const quoteTweet = (parseTweet(quoteContainer) || {text: ''}).text;
 
-  const txt = `@${handle} (${username}) @ ${time}\n${text}\n\n${imgSrcs}\n${videoSrc}\n${gifSrc}\n\n${quoteTweet}`;
+  const out = (
+    `@${handle} (${username}) @ ${time}\n` +
+    `${text}\n\n${imgSrcs}\n${videoSrc}\n${gifSrc}\n\n${quoteTweet}`
+  )
   return {
-    tweet: txt,
+    username: username,
+    handle: handle,
+    text: out.trim(),
     time: new Date((time || {}).dateTime).getTime(),
   }
 }
-// console.log(Array.from(document.querySelectorAll('main div[aria-label="Timeline: Conversation"] > div > div')).map(x => x && parseTweet(x).trim()).filter(x => x).join('\n\n'))
-
 
 class Thread {
   content = []
 
   addFrom(nodes) {
     Array.from(nodes)
-      // .filter(node => node.parentNode.parentNode.ariaLabel == TIMELINE_ARIA)
-      // .map(node => ({
-      //   // NOTE(tk) seems usually 1st is original tweet, 2nd is quote tweet
-      //   texts: node.querySelectorAll(sel),
-      //   //texts: node.querySelectorAll('[lang="en"]'),
-      //   time: node.querySelector('time')
-      // }))
-      // .filter(node => node.texts)
       .filter(x => x)
       .map(parseTweet)
-      .filter(t => t && t.tweet && t.tweet != 'null')
-      .forEach(obj => this.#add({
-        text: obj.tweet, //obj.texts.map(_handleNode).join("\n").trim(),
-        // We're okay with NaN if time is not available.
-        time: new Date((obj.time || {}).dateTime).getTime(),
-      }));
+      .filter(t => t && t.text)
+      .forEach(obj => this.#add(obj));
+    this.content = this.content.sort(c => c.time);
   }
 
   #add(obj) {
     if (this.content.length > 99) return; // don't make list unreasonably long
     if (this.content.find(o => o.text == obj.text)) return;
     this.content.push(obj);
-  }
-
-  toString() {
-    this.content = this.content.sort(c => c.time);
-    return this.content.map(c => c.text).join('\n\n---\n\n');
   }
 }
 
@@ -123,9 +112,14 @@ class Thread {
     a: [
       Shortcut.fun('t', () => initThreadReader(new Thread())),
       Shortcut.fun('c', () => {
-        F.guard(window.thread).then(t => t.toString()).then(c =>
-            navigator.clipboard.writeText(`${document.location.href}\n${c}`)
-              && Util.toast('Copied'))
+        F.guard(window.thread)
+          .then(t => {
+            const user = t.content[0].username || t.content[0].handle;
+            const url = document.location.href;
+            const tweets = t.content.map(c => c.text).join('\n\n---\n\n');
+            return `# [Tweet from ${user}](${url})\n\n${tweets}`;
+          })
+          .then(c => navigator.clipboard.writeText(c) && Util.toast('Copied'))
           .catch(msg => Util.toast(`Error: "${msg}"<br/>Forgot thread init?`));
       })
     ],
