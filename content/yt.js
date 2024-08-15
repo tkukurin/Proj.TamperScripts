@@ -117,10 +117,25 @@ async function tryInitSubs() {
   }).then(subs => {
     window.tamperSubs = subs;
     Util.toast('Tracking with captions');
+    return subs
+  }).then(async () => {
+    await Retry.sleep(500)
+    const sel = '#body #segments-container yt-formatted-string.segment-text'
+    const allTranscripts = Array.from(document.querySelectorAll(sel))
+      .map(x => x.parentNode.innerText)
+    return allTranscripts
+  }).then(allTranscripts => {
+    const url = getUrl()
+    const title = document.querySelector('#title h1').innerText.trim()
+    const base = `title: ${title}\nsource: ${url}\n\n`
+    const presentation = allTranscripts.join('\n\n')
+    navigator.clipboard.writeText(`${base}## Transcript\n${presentation}`)
+    Util.toast('C/p captions!')
   }).catch(msg => {
     console.error(msg);
     Util.toast('Failed getting captions');
   });
+
 }
 
 /** Quick&dirty class encapsulating all captions within a session. */
@@ -155,6 +170,17 @@ class Tracker {
   }
 }
 
+function getPlaylistLines() {
+  const sel = '#contents ytd-playlist-video-renderer a#video-title'
+  const titles = Array
+    .from(document.querySelectorAll(sel))
+    .map(x => ({text: x.innerText.trim(), href: x.href}))
+  const presentation = titles
+    .map(t => `[${t.text}](${t.href})`)
+    .join('\n* ');
+  return `* ${presentation}`
+}
+
 const tracker = new Tracker();
 window.onkeyup = document.onkeyup = Shortcut.init({
   a: [
@@ -166,11 +192,21 @@ window.onkeyup = document.onkeyup = Shortcut.init({
     Shortcut.fun('v', () => tracker.ckpt()),
     // alt-w to copy the title
     Shortcut.fun('w', () => {
-      const title = document.querySelector(
-        "#info h1.title.ytd-video-primary-info-renderer").textContent;
-      const url = getUrl();
-      navigator.clipboard.writeText(`[${title}](${url})`);
-      Util.toast(`Copied title`);
+      if (window.location.pathname == '/playlist') {
+        const presentation = getPlaylistLines()
+        if (presentation) {
+          navigator.clipboard.writeText(presentation)
+          Util.toast('Copied playlist')
+        } else {
+          Util.toast('Could not find playlist')
+        }
+      } else {
+        const title = document.querySelector(
+          "#info h1.title.ytd-video-primary-info-renderer").textContent;
+        const url = getUrl();
+        navigator.clipboard.writeText(`[${title}](${url})`);
+        Util.toast(`Copied title`);
+      }
     }),
     // alt-o to start tracking subtitles if available
     Shortcut.fun('o', tryInitSubs),
