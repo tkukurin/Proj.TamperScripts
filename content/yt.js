@@ -129,7 +129,7 @@ async function tryInitSubs() {
     const title = document.querySelector('#title h1').innerText.trim()
     const base = `title: ${title}\nsource: ${url}\n\n`
     const presentation = allTranscripts.join('\n\n')
-    navigator.clipboard.writeText(`${base}## Transcript\n${presentation}`)
+    navigator.clipboard.writeText(`${base}## Transcript\n\n${presentation}`)
     Util.toast('C/p captions!')
   }).catch(msg => {
     console.error(msg);
