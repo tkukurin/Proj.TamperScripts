@@ -98,8 +98,8 @@ function tryFindTranscripts() {
   return nodes;
 }
 
-/** If available, show subtitles next to the YT video and start tracking. */
-async function tryInitSubs() {
+/** Try show subtitles and c/p relevant info. */
+async function cpImportantInfo() {
   const subtitleWrapSel = '*[target-id=engagement-panel-searchable-transcript]';
   document.querySelector('#info #button > yt-icon.ytd-menu-renderer').click();
   await Retry.sleep(250);
@@ -208,8 +208,7 @@ window.onkeyup = document.onkeyup = Shortcut.init({
         Util.toast(`Copied title`);
       }
     }),
-    // alt-o to start tracking subtitles if available
-    Shortcut.fun('o', tryInitSubs),
+    Shortcut.fun('o', cpImportantInfo),
 
     Shortcut.sel('i', '.ytp-miniplayer-button'),
     Shortcut.sel('i', '.ytp-miniplayer-expand-watch-page-button'),
