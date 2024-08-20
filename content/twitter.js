@@ -42,7 +42,8 @@ function parseTweet(container) {
 
   const out = (
     `@${handle} (${username}) @ ${time}\n` +
-    `${text}\n\n${imgSrcs}\n${videoSrc}\n${gifSrc}\n\n${quoteTweet}`
+    `${text}\n\n${imgSrcs}\n${videoSrc}\n${gifSrc}`
+    // `\n\n${quoteTweet}`
   )
   return {
     username: username,
