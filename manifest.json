@@ -34,11 +34,10 @@
       "matches": ["<all_urls>"],
       "js": [
         "util/include.js",
-        "content/vim.js"
+        "content/misc.js"
       ],
       "css": [
-        "css/util.css",
-        "css/vim.css"
+        "css/util.css"
       ],
       "run_at": "document_start",
       "all_frames": true
@@ -60,10 +59,10 @@
       "run_at": "document_start"
     },
     {
-      "matches": ["https://app.slack.com/*"],
+      "matches": ["https://x.com/*"],
       "js": [
         "util/include.js",
-        "content/slack.js"
+        "content/twitter.js"
       ],
       "run_at": "document_start"
     },
@@ -72,14 +71,6 @@
       "js": [
         "util/include.js",
         "content/yt.js"
-      ],
-      "run_at": "document_start"
-    },
-    {
-      "matches": ["https://arxiv.org/*"],
-      "js": [
-        "util/include.js",
-        "content/arxiv.js"
       ],
       "run_at": "document_start"
     },
@@ -101,23 +92,6 @@
     {
       "matches": [ "https://www.reddit.com/*" ],
       "js": ["content/reddit.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://www.yesmovies.ag/*",
-        "https://yesmovies.ag/*"
-      ],
-      "js": ["content/ymov.js"],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://web.facebook.com/?*",
-        "https://www.facebook.com/",
-        "https://www.index.hr/*"
-      ],
-      "css": ["css/hide.css"],
       "run_at": "document_idle"
     }
   ]
