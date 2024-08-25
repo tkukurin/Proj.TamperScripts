@@ -18,11 +18,11 @@ function parseTweet(container) {
   const handle = article.querySelector('[data-testid="User-Name"] a')?.href.split('/').pop() || 'unknown_handle';
   const time = article.querySelector('time')?.textContent || 'Unknown Time';
 
-  const texts = article.querySelectorAll('[data-testid="tweetText"] span');
+  const tweets = article.querySelector('[data-testid="tweetText"]');
+  const texts = tweets.querySelectorAll('span:not(a>span),a');
   const text = Array.from(texts).map(t => {
-      const maybeLink = t.querySelector('a');
-      if (maybeLink) {
-          return `[${maybeLink.innerText.trim()}](${maybeLink.href})`;
+      if (t.nodeName == "A") {
+          return `[${t.innerText.trim()}](${t.href})`;
       }
       return t.innerText.trim();
   }).join(' ');
