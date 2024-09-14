@@ -25,7 +25,7 @@ document.onkeyup = Shortcut.init({
       window.location.href = `${base}/github.com/${user}/${repo}${maybeCommit}/-/blob/${rest}`;
     }),
 
-    Shortcut.fun('c', () => {
+    Shortcut.fun('C', () => {
       // Inspired by
       // https://github.com/googlecolab/open_in_colab/blob/main/js/background.js
       // Badge: https://colab.research.google.com/assets/colab-badge.svg
