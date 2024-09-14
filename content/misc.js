@@ -61,7 +61,9 @@ window.onkeyup = document.onkeyup = Shortcut.init({
       }
       let src = 'src: ' + urls.join('\nsrc: ');
       let text = `${src}\n\n${sel.toString()}`;
+      // document.execCommand('copy')
       navigator.clipboard.writeText(text);
+      console.log(text)
       Util.toast('Copied with source')
     })
   ]
