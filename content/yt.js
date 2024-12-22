@@ -208,7 +208,19 @@ window.onkeyup = document.onkeyup = Shortcut.init({
         Util.toast(`Copied title`);
       }
     }),
-    Shortcut.fun('o', cpImportantInfo),
+    Shortcut.fun('o', () => {
+      if (window.location.pathname == '/playlist') {
+        const presentation = getPlaylistLines()
+        if (presentation) {
+          navigator.clipboard.writeText(presentation)
+          Util.toast('Copied playlist')
+        } else {
+          Util.toast('Could not find playlist')
+        }
+      } else {
+        cpImportantInfo()
+      }
+    }),
 
     Shortcut.sel('i', '.ytp-miniplayer-button'),
     Shortcut.sel('i', '.ytp-miniplayer-expand-watch-page-button'),
