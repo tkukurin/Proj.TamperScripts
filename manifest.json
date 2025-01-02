@@ -34,7 +34,8 @@
       "matches": ["<all_urls>"],
       "js": [
         "util/include.js",
-        "content/misc.js"
+        "content/misc.js",
+        "content/latex.js"
       ],
       "css": [
         "css/util.css"
