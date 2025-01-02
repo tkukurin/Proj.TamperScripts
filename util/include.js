@@ -225,6 +225,71 @@ Shortcut.norm = (...modKeys) => F.retSelf(shortcut => {
   })[m])
 });
 
+Util.matchByText = (patterns, containers) => {
+  let matched = []
+  containers.forEach(container => {
+    const textContent = container.textContent || "";
+    for (const pattern of patterns) {
+      if (pattern.test(textContent)) {
+        matched.push(container)
+        break;
+      }
+    }
+  });
+  return matched;
+}
+
+Util.inputBox = (maybeActionFn, maybeDelimiter=";") => {
+  /* If maybeActionFn provided, it'll run it on key=enter.
+  e.g.
+  let f = (e) => {
+    const conts = document.querySelectorAll('.containerICareAbout);
+    const matched = Util.matchByText(pats, conts);
+    for (const m of matched) {
+      document.body.removeChild(m);
+    }
+    return "close";
+  }
+  const box = Util.inputBox(f);
+  */
+  const inputBox = document.createElement("input");
+  inputBox.type = "text";
+  inputBox.style.position = "fixed";
+  inputBox.style.top = "50%";
+  inputBox.style.left = "50%";
+  inputBox.style.transform = "translate(-50%, -50%)";
+  inputBox.style.zIndex = 10000;
+  inputBox.style.padding = "10px";
+  inputBox.style.border = "1px solid #007bff";
+  inputBox.style.borderRadius = "5px";
+  inputBox.style.boxShadow = "0 4px 6px rgba(0, 0, 0, 0.1)";
+  inputBox.style.fontSize = "16px";
+  inputBox.style.width = "300px";
+  inputBox.style.textAlign = "center";
+  inputBox.value = "";
+
+  document.body.appendChild(inputBox);
+  inputBox.focus();
+
+  if (maybeActionFn) {
+    inputBox.addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        const data = inputBox.value.trim()
+        const delimited = data.split(maybeDelimiter)
+        const ret = maybeActionFn(data, delimited, e);
+        if (["close", "done", null, undefined].includes(ret)) {
+          document.body.removeChild(inputBox);
+        } else {
+          console.debug(`[tk] ${ret}: keeping window open`);
+        }
+      } else if (e.key === "Escape") {
+        document.body.removeChild(inputBox);
+      }
+    })
+  }
+
+  return inputBox;
+}
 
 // TODO dumb hack for node tests. investigate better.
 if (window.__test) {
