@@ -92,7 +92,8 @@
         "https://slideslive.com/*",
         "http://videolectures.net/*",
         "https://complexityexplorer.org/*",
-        "https://drive.google.com/*/view"
+        "https://drive.google.com/*/view",
+        "https://www.channel4.com/*"
       ],
       "js": ["content/speed.js"],
       "css": ["css/speed.css"],
@@ -101,6 +102,11 @@
     {
       "matches": [ "https://www.reddit.com/*" ],
       "js": ["content/reddit.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [ "https://www.facebook.com/*" ],
+      "js": ["content/hide.js"],
       "run_at": "document_idle"
     }
   ]
