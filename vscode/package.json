@@ -1,0 +1,37 @@
+{
+  "name": "tkzettel",
+  "displayName": "tkZettel",
+  "description": "",
+  "version": "0.0.1",
+  "publisher": "tkukurin",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "main": "./extension.js",
+  "activationEvents": [
+    "onCommand:zettelkasten.createNote"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "zettelkasten.createNote",
+        "title": "Zettelkasten: Create New Note From Template"
+      }
+    ],
+    "configuration": {
+      "title": "Zettelkasten Creator",
+      "properties": {
+        "zettelkasten.templateFilePath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to your Zettelkasten template file, e.g. `~/zettel_template.md`"
+        },
+        "zettelkasten.notesDirectory": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the directory where new notes should be created if no parent is selected. If empty, the workspace root is used."
+        }
+      }
+    }
+  }
+}
