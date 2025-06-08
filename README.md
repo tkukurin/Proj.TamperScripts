@@ -1,12 +1,12 @@
 # Chrome extensions
 
-Some scripts I wrote to simplify note-taking for video lectures & such.
-Primarily adds shortcuts to websites.
+Main use: replicate TamperMonkey style tooling by having my own base plugin.
+Probably on-and-off more-or-less usable and/or useful.
 
 * YouTube: Copy current timestamp and recent captions to clipboard.
 * YouTube: Video speed control based on [igrigorik/videospeed](https://github.com/igrigorik/videospeed).
 * GitHub: Shortcut to visit Sourcegraph or Colab for current page
-* Twitter: Copy contents of entire current thread as plain text
+* Twitter/Bluesky: Copy contents of entire current thread as plain text
 * Vim: navigate using `hjkl`, back/forward `HL` and follow links with `f`
 
 `include.js` is a simple library; has shorthand methods for DOM manipulation,
