@@ -1,3 +1,9 @@
+/*
+ * Gemini written example.
+ * Creates single file based on template.
+ * Not really usable, mean as demo ref.
+ */
+
 const vscode = require('vscode');
 const path = require('path');
 const fs = require('fs');
